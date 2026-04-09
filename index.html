@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Govind Soni — PhD Scholar, Multimodal Code Generation &amp; NLP | IIT Bombay</title>
+  <meta name="description" content="Govind Soni — PhD Research Scholar at IIT Bombay working on Multimodal Code Generation, Neural Machine Translation, NLP for low-resource languages, and Transformer architectures." />
+  <meta name="keywords" content="Govind Soni, IIT Bombay, NLP, Multimodal Code Generation, Neural Machine Translation, Low-resource NLP, Hindi Chinese NMT, Named Entity Recognition, BERT, Transformer, PhD researcher" />
+  <meta property="og:title" content="Govind Soni — PhD Researcher, IIT Bombay" />
+  <meta property="og:description" content="Research in Multimodal Code Generation, Neural Machine Translation, NLP, and deep learning." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 950: '#060d1a', 900: '#0b1628', 800: '#0f2040' },
+            gold: { 400: '#f0b429', 300: '#f7d072' },
+            mist: '#e8eef7',
+          },
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body:    ['DM Sans', 'sans-serif'],
+            mono:    ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    :root {
+      --navy-950: #060d1a;
+      --navy-900: #0b1628;
+      --navy-800: #0f2040;
+      --gold-400: #f0b429;
+      --gold-300: #f7d072;
+      --mist:     #e8eef7;
+      --dim:      #94a3b8;
+    }
+    * { scroll-behavior: smooth; }
+    html { scroll-padding-top: 80px; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--navy-950); color: var(--mist); overflow-x: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--navy-950); }
+    ::-webkit-scrollbar-thumb { background: var(--gold-400); border-radius: 2px; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.35;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    }
+
+    .glass-nav {
+      background: rgba(6,13,26,0.78);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(240,180,41,0.12);
+    }
+    .hero-mesh {
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(240,180,41,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 10% 80%, rgba(14,40,100,0.45) 0%, transparent 60%),
+        var(--navy-950);
+    }
+    .gold-line { display: inline-block; width: 40px; height: 2px; background: var(--gold-400); vertical-align: middle; margin-right: 12px; }
+    .section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-400); opacity: 0.9; }
+
+    .card {
+      background: rgba(15,32,64,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover { transform: translateY(-4px); border-color: rgba(240,180,41,0.25); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+
+    .timeline-line { position: absolute; left: 16px; top: 28px; bottom: -28px; width: 1px; background: linear-gradient(to bottom, rgba(240,180,41,0.6), rgba(240,180,41,0.04)); }
+    .timeline-dot  { width: 10px; height: 10px; border-radius: 50%; background: var(--gold-400); border: 2px solid var(--navy-950); box-shadow: 0 0 12px rgba(240,180,41,0.6); flex-shrink: 0; margin-top: 6px; }
+
+    .pub-card { background: rgba(15,32,64,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; transition: border-color 0.25s; }
+    .pub-card:hover { border-color: rgba(240,180,41,0.2); }
+
+    .bibtex-block {
+      display: none; background: rgba(6,13,26,0.85); border: 1px solid rgba(240,180,41,0.15);
+      border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+      line-height: 1.75; color: #a8c4e0; padding: 16px; margin-top: 12px; white-space: pre-wrap;
+    }
+    .bibtex-block.active { display: block; }
+
+    .contact-link {
+      display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+      background: rgba(15,32,64,0.5); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; transition: all 0.25s; text-decoration: none; color: var(--mist);
+    }
+    .contact-link:hover { border-color: rgba(240,180,41,0.35); background: rgba(240,180,41,0.07); color: var(--gold-300); }
+
+    .ham-line { display: block; width: 22px; height: 2px; background: var(--mist); border-radius: 2px; transition: all 0.3s; }
+    #menu-toggle.open .ham-line:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    #menu-toggle.open .ham-line:nth-child(2) { opacity: 0; }
+    #menu-toggle.open .ham-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    .badge { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.05em; padding: 3px 10px; border-radius: 999px; background: rgba(240,180,41,0.12); border: 1px solid rgba(240,180,41,0.3); color: var(--gold-300); }
+    .pill  { font-size: 0.72rem; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--dim); }
+
+    /* Profile picture */
+    .profile-ring { width: 110px; height: 110px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, #f0b429 0%, #f7d072 60%, rgba(240,180,41,0.2) 100%); flex-shrink: 0; }
+    .profile-ring-inner { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #0f2040; display: flex; align-items: center; justify-content: center; }
+    .profile-ring-inner img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .profile-initials { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 2rem; color: #f0b429; letter-spacing: -1px; }
+
+    .hero-name { font-family: 'Syne', sans-serif; font-weight: 800; line-height: 1.05; }
+    .text-gold-gradient { background: linear-gradient(135deg, #f0b429 0%, #f7d072 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    #mobile-menu { display: none; background: rgba(6,13,26,0.97); border-top: 1px solid rgba(240,180,41,0.1); }
+    #mobile-menu.open { display: block; }
+
+    @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) { .hero-name { font-size: clamp(2.4rem, 10vw, 4rem); } }
+  </style>
+</head>
+<body class="antialiased">
+
+<!-- NAV -->
+<header class="glass-nav fixed top-0 left-0 right-0 z-50">
+  <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#home" class="font-display font-bold text-sm tracking-wide text-mist flex items-center gap-2">
+      <span class="text-gold-400 font-mono text-xs">gs/</span>
+      <span>Govind Soni</span>
+    </a>
+    <ul class="hidden md:flex items-center gap-8">
+      <li><a href="#about"        class="text-sm text-slate-400 hover:text-gold-300 transition-colors">About</a></li>
+      <li><a href="#research"     class="text-sm text-slate-400 hover:text-gold-300 transition-colors">Research</a></li>
+      <li><a href="#experience"   class="text-sm text-slate-400 hover:text-gold-300 transition-colors">Experience</a></li>
+      <li><a href="#publications" class="text-sm text-slate-400 hover:text-gold-300 transition-colors">Publications</a></li>
+      <li><a href="#contact"      class="text-sm px-4 py-2 rounded-md border border-gold-400/40 text-gold-300 hover:bg-gold-400/10 transition-all">Contact</a></li>
+    </ul>
+    <button id="menu-toggle" class="md:hidden flex flex-col gap-[5px] p-1" aria-label="Toggle menu">
+      <span class="ham-line"></span><span class="ham-line"></span><span class="ham-line"></span>
+    </button>
+  </nav>
+  <div id="mobile-menu">
+    <ul class="flex flex-col px-6 py-4 gap-4">
+      <li><a href="#about"        class="mobile-link text-slate-400 hover:text-gold-300 text-sm transition-colors">About</a></li>
+      <li><a href="#research"     class="mobile-link text-slate-400 hover:text-gold-300 text-sm transition-colors">Research</a></li>
+      <li><a href="#experience"   class="mobile-link text-slate-400 hover:text-gold-300 text-sm transition-colors">Experience</a></li>
+      <li><a href="#publications" class="mobile-link text-slate-400 hover:text-gold-300 text-sm transition-colors">Publications</a></li>
+      <li><a href="#contact"      class="mobile-link text-slate-400 hover:text-gold-300 text-sm transition-colors">Contact</a></li>
+    </ul>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="home" class="hero-mesh min-h-screen flex items-center pt-16 relative overflow-hidden">
+  <div class="absolute right-[-15%] top-[10%] w-[600px] h-[600px] rounded-full border border-gold-400/5 pointer-events-none"></div>
+  <div class="absolute right-[-10%] top-[15%] w-[420px] h-[420px] rounded-full border border-gold-400/5 pointer-events-none"></div>
+
+  <div class="max-w-6xl mx-auto px-6 py-24 relative z-10">
+    <div class="max-w-3xl">
+
+      <!-- Profile pic + label -->
+      <div class="flex items-center gap-5 mb-8 opacity-0 animate-[fadeSlideIn_0.6s_ease_0.1s_forwards]">
+        <div class="profile-ring">
+          <div class="profile-ring-inner">
+            <!--
+              ADD YOUR PHOTO: Place a file called "profile.jpg" in the same
+              folder as this index.html file. It will appear automatically.
+              If missing, your initials "GS" are shown as a fallback.
+            -->
+            <img src="profile.jpg" alt="Govind Soni"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <span class="profile-initials" style="display:none;">GS</span>
+          </div>
+        </div>
+        <div>
+          <span class="section-label">Research Scholar</span>
+          <span class="text-slate-500 text-xs mx-2">·</span>
+          <span class="badge">IIT Bombay</span>
+        </div>
+      </div>
+
+      <h1 class="hero-name text-5xl md:text-7xl text-mist mb-2 opacity-0 animate-[fadeSlideIn_0.7s_ease_0.2s_forwards]">
+        Govind<br/><span class="text-gold-gradient">Soni</span>
+      </h1>
+
+      <p class="font-body text-slate-400 text-lg mt-6 mb-4 opacity-0 animate-[fadeSlideIn_0.7s_ease_0.35s_forwards]">
+        PhD Researcher &nbsp;·&nbsp; Multimodal Code Generation &nbsp;·&nbsp; NLP
+      </p>
+
+      <div class="mt-8 p-5 rounded-xl border border-gold-400/15 bg-navy-800/30 max-w-2xl opacity-0 animate-[fadeSlideIn_0.7s_ease_0.45s_forwards]">
+        <p class="section-label mb-2">Research Snapshot</p>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          I develop AI systems that understand and generate code from multiple input modalities — combining vision, language, and structured data to automate software tasks.
+          My broader work spans neural machine translation for low-resource languages, helping underrepresented communities benefit from modern language AI.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-4 mt-10 opacity-0 animate-[fadeSlideIn_0.7s_ease_0.55s_forwards]">
+        <a href="#publications" class="px-6 py-3 bg-gold-400 text-navy-950 rounded-lg font-display font-semibold text-sm hover:bg-gold-300 transition-colors shadow-lg shadow-gold-400/20">View Publications</a>
+        <a href="#contact"      class="px-6 py-3 border border-white/10 text-mist rounded-lg font-display text-sm hover:border-gold-400/40 hover:text-gold-300 transition-all">Get in Touch</a>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mt-8 opacity-0 animate-[fadeSlideIn_0.7s_ease_0.65s_forwards]">
+        <span class="pill">Multimodal Code Generation</span>
+        <span class="pill">NLP</span>
+        <span class="pill">Neural Machine Translation</span>
+        <span class="pill">Transformers</span>
+        <span class="pill">Low-Resource Languages</span>
+        <span class="pill">Named Entity Recognition</span>
+        <span class="pill">Deep Learning</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
+    <span class="section-label">scroll</span>
+    <div class="w-px h-8 bg-gradient-to-b from-gold-400 to-transparent"></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="py-24 relative">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="grid md:grid-cols-2 gap-16 items-center">
+      <div>
+        <div class="reveal">
+          <span class="section-label"><span class="gold-line"></span>About</span>
+          <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 mb-6 font-bold">Advancing Language AI<br/>for Underserved Communities</h2>
+          <p class="text-slate-400 leading-relaxed mb-4">
+            I am a PhD research scholar at <span class="text-mist">IIT Bombay</span>, currently working on <span class="text-gold-300">Multimodal Code Generation</span> — building systems that combine visual, textual, and structured inputs to generate code. I was formerly a Research Assistant at the <span class="text-mist">CFILT Lab, IIT Bombay</span>.
+          </p>
+          <p class="text-slate-400 leading-relaxed mb-4">
+            My earlier research focused on neural machine translation for low-resource language pairs like Hindi–Chinese, applying romanization and data augmentation to bridge the gap where parallel data is scarce.
+          </p>
+          <p class="text-slate-400 leading-relaxed">
+            My work has been published at ICON 2024 and Springer, and I contributed to national multilingual AI initiatives under Bhashini/MeitY.
+          </p>
+        </div>
+        <div class="reveal reveal-delay-2 grid grid-cols-3 gap-4 mt-10">
+          <div class="text-center p-4 rounded-xl border border-white/5 bg-navy-800/30">
+            <p class="font-display text-2xl text-gold-400 font-bold">2+</p>
+            <p class="text-xs text-slate-500 mt-1">Publications</p>
+          </div>
+          <div class="text-center p-4 rounded-xl border border-white/5 bg-navy-800/30">
+            <p class="font-display text-2xl text-gold-400 font-bold">4+</p>
+            <p class="text-xs text-slate-500 mt-1">Projects</p>
+          </div>
+          <div class="text-center p-4 rounded-xl border border-white/5 bg-navy-800/30">
+            <p class="font-display text-2xl text-gold-400 font-bold">8.33</p>
+            <p class="text-xs text-slate-500 mt-1">PhD CPI</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal reveal-delay-2 space-y-5">
+        <div class="card p-5">
+          <p class="text-xs text-slate-500 font-mono mb-3">Machine Learning &amp; NLP</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="pill">NLP</span><span class="pill">Machine Learning</span><span class="pill">Deep Learning</span>
+            <span class="pill">BERT</span><span class="pill">GPT</span><span class="pill">LLaMA</span>
+            <span class="pill">SFT</span><span class="pill">LoRA</span><span class="pill">XAI</span><span class="pill">Transfer Learning</span>
+          </div>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-slate-500 font-mono mb-3">Tools &amp; Frameworks</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="pill">PyTorch</span><span class="pill">TensorFlow</span><span class="pill">HuggingFace</span><span class="pill">NumPy</span><span class="pill">Anaconda</span>
+          </div>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-slate-500 font-mono mb-3">Platforms &amp; Infrastructure</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="pill">HPC Clusters (Slurm)</span><span class="pill">Docker</span><span class="pill">Python</span><span class="pill">MySQL</span><span class="pill">LaTeX</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESEARCH FOCUS -->
+<section id="research" class="py-24 bg-navy-900/40">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal text-center mb-16">
+      <span class="section-label"><span class="gold-line"></span>Research Focus</span>
+      <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 font-bold">What I Work On</h2>
+      <p class="text-slate-400 mt-3 max-w-xl mx-auto text-sm">My active research directions and technical interests.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <div class="card reveal reveal-delay-1 p-6">
+        <div class="w-10 h-10 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mb-5">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        </div>
+        <div class="flex items-center gap-2 mb-2">
+          <h3 class="font-display text-base font-semibold text-mist">Multimodal Code Generation</h3>
+          <span class="badge" style="font-size:0.6rem;">Current</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">Building AI systems that generate code from multiple input modalities — combining natural language, visual diagrams, and structured specifications to automate software development.</p>
+        <div class="mt-4 flex flex-wrap gap-1">
+          <span class="pill" style="font-size:0.65rem;">Code LLMs</span>
+          <span class="pill" style="font-size:0.65rem;">Vision-Language</span>
+          <span class="pill" style="font-size:0.65rem;">Program Synthesis</span>
+        </div>
+      </div>
+
+      <div class="card reveal reveal-delay-2 p-6">
+        <div class="w-10 h-10 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mb-5">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+        </div>
+        <h3 class="font-display text-base font-semibold text-mist mb-2">Neural Machine Translation</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Built encoder-decoder NMT systems for low-resource language pairs (Hindi–Chinese). Applied romanization (Romantra) to improve translation quality where parallel data is scarce.</p>
+        <div class="mt-4 flex flex-wrap gap-1">
+          <span class="pill" style="font-size:0.65rem;">Hi-Zh NMT</span>
+          <span class="pill" style="font-size:0.65rem;">Romanization</span>
+          <span class="pill" style="font-size:0.65rem;">Back-Translation</span>
+        </div>
+      </div>
+
+      <div class="card reveal reveal-delay-3 p-6">
+        <div class="w-10 h-10 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mb-5">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h3 class="font-display text-base font-semibold text-mist mb-2">Named Entity Recognition</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Developed BioBERT-based NER models for biomedical entity extraction from COVID-19 corpora — identifying medical terms, symptoms, and treatments from clinical text.</p>
+        <div class="mt-4 flex flex-wrap gap-1">
+          <span class="pill" style="font-size:0.65rem;">BioBERT</span>
+          <span class="pill" style="font-size:0.65rem;">Biomedical NLP</span>
+          <span class="pill" style="font-size:0.65rem;">COVID-19</span>
+        </div>
+      </div>
+
+      <div class="card reveal reveal-delay-1 p-6">
+        <div class="w-10 h-10 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mb-5">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h3 class="font-display text-base font-semibold text-mist mb-2">Sarcasm &amp; Sentiment Detection</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Designed hybrid sarcasm detection combining rule-based, ML, and deep learning. Fine-tuned RoBERTa and fused contextual embeddings with LSTM for nuanced classification.</p>
+        <div class="mt-4 flex flex-wrap gap-1">
+          <span class="pill" style="font-size:0.65rem;">RoBERTa</span>
+          <span class="pill" style="font-size:0.65rem;">LSTM</span>
+          <span class="pill" style="font-size:0.65rem;">Sentiment</span>
+        </div>
+      </div>
+
+      <div class="card reveal reveal-delay-2 p-6">
+        <div class="w-10 h-10 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mb-5">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        </div>
+        <h3 class="font-display text-base font-semibold text-mist mb-2">Transformer Architectures</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Working across BERT, GPT, and LLaMA variants with experience in fine-tuning (SFT, LoRA), parameter-efficient adaptation, and explainability (XAI) techniques.</p>
+        <div class="mt-4 flex flex-wrap gap-1">
+          <span class="pill" style="font-size:0.65rem;">BERT / GPT</span>
+          <span class="pill" style="font-size:0.65rem;">LoRA</span>
+          <span class="pill" style="font-size:0.65rem;">XAI</span>
+        </div>
+      </div>
+
+      <div class="card reveal reveal-delay-3 p-6">
+        <div class="w-10 h-10 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mb-5">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        </div>
+        <h3 class="font-display text-base font-semibold text-mist mb-2">Multilingual AI (Bhashini)</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Contributed to Ishaan and Vidyaapati multilingual AI projects under MeitY's Bhashini initiative — bringing AI capabilities to Indic languages at national scale.</p>
+        <div class="mt-4 flex flex-wrap gap-1">
+          <span class="pill" style="font-size:0.65rem;">Bhashini</span>
+          <span class="pill" style="font-size:0.65rem;">MeitY</span>
+          <span class="pill" style="font-size:0.65rem;">Indic NLP</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE & EDUCATION -->
+<section id="experience" class="py-24">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal text-center mb-16">
+      <span class="section-label"><span class="gold-line"></span>Journey</span>
+      <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 font-bold">Experience &amp; Education</h2>
+    </div>
+    <div class="grid md:grid-cols-2 gap-16">
+
+      <!-- Experience col -->
+      <div>
+        <h3 class="font-display text-sm font-semibold text-gold-400 tracking-widest uppercase mb-8 reveal">Work Experience</h3>
+        <div class="space-y-0">
+
+          <div class="relative pl-10 pb-10 reveal">
+            <div class="absolute left-0 top-0 flex flex-col items-center">
+              <div class="timeline-dot"></div><div class="timeline-line"></div>
+            </div>
+            <div class="card p-5">
+              <span class="badge mb-3 inline-block">Jul 2023 – May 2025</span>
+              <h4 class="font-display font-semibold text-mist text-base">Research Assistant</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-3">CFILT Lab, IIT Bombay &nbsp;<span class="text-slate-600">(Former)</span></p>
+              <ul class="text-slate-400 text-sm space-y-1.5">
+                <li class="flex gap-2"><span class="text-gold-400 mt-0.5">›</span>Built and trained Transformer-based NMT models</li>
+                <li class="flex gap-2"><span class="text-gold-400 mt-0.5">›</span>Applied back-translation and data augmentation</li>
+                <li class="flex gap-2"><span class="text-gold-400 mt-0.5">›</span>Curated and preprocessed parallel/monolingual corpora</li>
+                <li class="flex gap-2"><span class="text-gold-400 mt-0.5">›</span>Evaluated performance using BLEU and standard metrics</li>
+                <li class="flex gap-2"><span class="text-gold-400 mt-0.5">›</span>Contributed to Ishaan &amp; Vidyaapati (Bhashini / MeitY)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="relative pl-10 pb-10 reveal reveal-delay-1">
+            <div class="absolute left-0 top-0 flex flex-col items-center">
+              <div class="timeline-dot"></div><div class="timeline-line"></div>
+            </div>
+            <div class="card p-5">
+              <span class="badge mb-3 inline-block">Oct 2022 – Jan 2023</span>
+              <h4 class="font-display font-semibold text-mist text-base">Project SRF</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-3">IIT (ISM) Dhanbad</p>
+              <p class="text-slate-400 text-sm">Auto-Evaluation of Tenders using AI/ML — OCR extraction from scanned documents and AI-based evaluation framework.</p>
+            </div>
+          </div>
+
+          <div class="relative pl-10 reveal reveal-delay-2">
+            <div class="absolute left-0 top-0"><div class="timeline-dot"></div></div>
+            <div class="card p-5">
+              <span class="badge mb-3 inline-block">Jul 2020 – Dec 2020</span>
+              <h4 class="font-display font-semibold text-mist text-base">Content Writer</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-3">GATE Coaching</p>
+              <p class="text-slate-400 text-sm">Created technical content for competitive engineering examinations.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Education col -->
+      <div>
+        <h3 class="font-display text-sm font-semibold text-gold-400 tracking-widest uppercase mb-8 reveal">Education</h3>
+        <div class="space-y-0">
+
+          <div class="relative pl-10 pb-10 reveal">
+            <div class="absolute left-0 top-0 flex flex-col items-center">
+              <div class="timeline-dot"></div><div class="timeline-line"></div>
+            </div>
+            <div class="card p-5">
+              <span class="badge mb-3 inline-block">2023 – Present</span>
+              <h4 class="font-display font-semibold text-mist text-base">PhD, Computer Science</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-2">Indian Institute of Technology (IIT) Bombay</p>
+              <p class="text-slate-400 text-sm">CPI: <span class="text-mist">8.33</span> &nbsp;·&nbsp; Research in Multimodal Code Generation and NLP for low-resource languages.</p>
+            </div>
+          </div>
+
+          <div class="relative pl-10 pb-10 reveal reveal-delay-1">
+            <div class="absolute left-0 top-0 flex flex-col items-center">
+              <div class="timeline-dot"></div><div class="timeline-line"></div>
+            </div>
+            <div class="card p-5">
+              <span class="badge mb-3 inline-block">2020 – 2022</span>
+              <h4 class="font-display font-semibold text-mist text-base">M.Tech, Statistical Computing (Data Science)</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-2">Jawaharlal Nehru University, Delhi</p>
+              <p class="text-slate-400 text-sm">Aggregate: <span class="text-mist">87.40%</span> &nbsp;·&nbsp; Thesis: Deep Learning for COVID-Related Named Entity Recognition.</p>
+            </div>
+          </div>
+
+          <!-- Graduation year removed as requested -->
+          <div class="relative pl-10 pb-10 reveal reveal-delay-2">
+            <div class="absolute left-0 top-0 flex flex-col items-center">
+              <div class="timeline-dot"></div><div class="timeline-line"></div>
+            </div>
+            <div class="card p-5">
+              <h4 class="font-display font-semibold text-mist text-base">B.Tech, Computer Science Engineering</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-2">Rajasthan Technical University</p>
+              <p class="text-slate-400 text-sm">Foundation in algorithms, software engineering, and computer systems.</p>
+            </div>
+          </div>
+
+          <div class="relative pl-10 reveal reveal-delay-3">
+            <div class="absolute left-0 top-0"><div class="timeline-dot"></div></div>
+            <div class="card p-5">
+              <span class="badge mb-3 inline-block">Qualifications</span>
+              <h4 class="font-display font-semibold text-mist text-base">National Examinations</h4>
+              <p class="text-gold-300/70 text-xs font-mono mt-1 mb-2">GATE &amp; UGC NET</p>
+              <p class="text-slate-400 text-sm">GATE Qualified (2020, 2021, 2024) &nbsp;·&nbsp; UGC NET Qualified (2023)</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PUBLICATIONS -->
+<section id="publications" class="py-24 bg-navy-900/40">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal text-center mb-16">
+      <span class="section-label"><span class="gold-line"></span>Publications</span>
+      <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 font-bold">Research Output</h2>
+      <p class="text-slate-400 mt-3 text-sm max-w-lg mx-auto">Click <span class="text-gold-300">BibTeX</span> to expand citation details.</p>
+    </div>
+    <div class="space-y-6">
+
+      <div class="pub-card reveal p-6">
+        <div class="flex flex-wrap items-start gap-3 justify-between mb-4">
+          <span class="badge">Conference Proceedings</span>
+          <span class="text-xs text-slate-500 font-mono">ICON 2024</span>
+        </div>
+        <h3 class="font-display font-semibold text-mist text-base md:text-lg leading-snug mb-2">Romantra: Optimizing Neural Machine Translation for Low-Resource Languages through Romanization</h3>
+        <p class="text-slate-400 text-sm mb-1"><span class="text-gold-300">G. Soni</span> and P. Bhattacharyya</p>
+        <p class="text-slate-500 text-xs mb-4">Proceedings of the 21st International Conference on Natural Language Processing (ICON) · AU-KBC Research Centre, Chennai · NLP Association of India · pp. 157–168</p>
+        <button class="bibtex-btn text-xs px-3 py-1.5 rounded-md border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-colors font-mono" data-target="bib1">{ BibTeX }</button>
+        <div id="bib1" class="bibtex-block">@inproceedings{soni2024romantra,
+  title     = {Romantra: Optimizing neural machine translation for
+               low-resource languages through romanization},
+  author    = {Soni, Govind and Bhattacharyya, Pushpak},
+  booktitle = {Proceedings of the 21st International Conference on
+               Natural Language Processing (ICON)},
+  pages     = {157--168},
+  year      = {2024},
+  publisher = {NLP Association of India (NLPAI)},
+  address   = {AU-KBC Research Centre, Chennai, India}
+}</div>
+      </div>
+
+      <div class="pub-card reveal reveal-delay-1 p-6">
+        <div class="flex flex-wrap items-start gap-3 justify-between mb-4">
+          <span class="badge">Book Chapter</span>
+          <span class="text-xs text-slate-500 font-mono">Springer 2023</span>
+        </div>
+        <h3 class="font-display font-semibold text-mist text-base md:text-lg leading-snug mb-2">BioBERT-Based Model for COVID-Related Named Entity Recognition</h3>
+        <p class="text-slate-400 text-sm mb-1"><span class="text-gold-300">G. Soni</span></p>
+        <p class="text-slate-500 text-xs mb-4">Advances in IoT and Security with Computational Intelligence · Springer · pp. 333–346 · DOI: 10.1007/978-981-99-5085-0_32</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="bibtex-btn text-xs px-3 py-1.5 rounded-md border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-colors font-mono" data-target="bib2">{ BibTeX }</button>
+          <a href="https://doi.org/10.1007/978-981-99-5085-0_32" target="_blank" rel="noopener" class="text-xs px-3 py-1.5 rounded-md border border-white/10 text-slate-400 hover:text-mist hover:border-white/20 transition-colors">DOI ↗</a>
+        </div>
+        <div id="bib2" class="bibtex-block">@incollection{soni2023biobert,
+  title     = {BioBERT-Based Model for COVID-Related Named Entity Recognition},
+  author    = {Soni, Govind},
+  booktitle = {Advances in IoT and Security with Computational Intelligence},
+  pages     = {333--346},
+  year      = {2023},
+  publisher = {Springer},
+  doi       = {10.1007/978-981-99-5085-0_32}
+}</div>
+      </div>
+
+      <div class="pub-card reveal reveal-delay-2 p-6">
+        <div class="flex flex-wrap items-start gap-3 justify-between mb-4">
+          <span class="badge">Book</span>
+          <span class="text-xs text-slate-500 font-mono">Springer 2024</span>
+        </div>
+        <h3 class="font-display font-semibold text-mist text-base md:text-lg leading-snug mb-2">Deep Learning for Extracting Biomedical Entities from COVID-19 Dataset: A Case Study</h3>
+        <p class="text-slate-400 text-sm mb-1"><span class="text-gold-300">G. Soni</span></p>
+        <p class="text-slate-500 text-xs mb-4">Springer · September 2024</p>
+        <button class="bibtex-btn text-xs px-3 py-1.5 rounded-md border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-colors font-mono" data-target="bib3">{ BibTeX }</button>
+        <div id="bib3" class="bibtex-block">@book{soni2024deeplearning,
+  title     = {Deep Learning for Extracting Biomedical Entities
+               from COVID-19 Dataset: A Case Study},
+  author    = {Soni, Govind},
+  publisher = {Springer},
+  year      = {2024},
+  month     = {September}
+}</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="py-24">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal text-center mb-16">
+      <span class="section-label"><span class="gold-line"></span>Contact</span>
+      <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 font-bold">Get In Touch</h2>
+      <p class="text-slate-400 mt-3 text-sm max-w-md mx-auto">Open to research collaborations, academic discussions, and opportunities in NLP and multilingual AI.</p>
+    </div>
+    <div class="max-w-xl mx-auto grid gap-3 reveal reveal-delay-1">
+
+      <a href="mailto:sonigovind07@gmail.com" class="contact-link">
+        <div class="w-9 h-9 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <div><p class="text-xs text-slate-500 font-mono">Email</p><p class="text-sm text-mist">sonigovind07@gmail.com</p></div>
+        <svg class="w-4 h-4 text-slate-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+
+      <a href="https://www.linkedin.com/in/sonigovind" target="_blank" rel="noopener" class="contact-link">
+        <div class="w-9 h-9 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-gold-400" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </div>
+        <div><p class="text-xs text-slate-500 font-mono">LinkedIn</p><p class="text-sm text-mist">linkedin.com/in/sonigovind</p></div>
+        <svg class="w-4 h-4 text-slate-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+
+      <!-- UPDATE: replace REPLACE_WITH_YOUR_ID with your actual Google Scholar user ID -->
+      <a href="https://scholar.google.com/citations?user=REPLACE_WITH_YOUR_ID" target="_blank" rel="noopener" class="contact-link">
+        <div class="w-9 h-9 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <div><p class="text-xs text-slate-500 font-mono">Google Scholar</p><p class="text-sm text-mist">View my citations</p></div>
+        <svg class="w-4 h-4 text-slate-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+
+      <!-- UPDATE: replace sonigovind with your actual GitHub username -->
+      <a href="https://github.com/sonigovind" target="_blank" rel="noopener" class="contact-link">
+        <div class="w-9 h-9 rounded-lg bg-gold-400/10 border border-gold-400/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-gold-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </div>
+        <div><p class="text-xs text-slate-500 font-mono">GitHub</p><p class="text-sm text-mist">github.com/sonigovind</p></div>
+        <svg class="w-4 h-4 text-slate-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="border-t border-white/5 py-8">
+  <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-3">
+    <p class="text-slate-500 text-xs font-mono">© 2026 Govind Soni · IIT Bombay</p>
+    <p class="text-slate-600 text-xs font-mono">Last Updated: <span class="text-slate-500">April 2026</span></p>
+    <p class="text-slate-600 text-xs">Academic Portfolio · <span class="text-slate-500">index.html</span></p>
+  </div>
+</footer>
+
+<script>
+  // Hamburger
+  const toggle = document.getElementById('menu-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+  toggle.addEventListener('click', () => {
+    toggle.classList.toggle('open');
+    mobileMenu.classList.toggle('open');
+  });
+  document.querySelectorAll('.mobile-link').forEach(link => {
+    link.addEventListener('click', () => {
+      toggle.classList.remove('open');
+      mobileMenu.classList.remove('open');
+    });
+  });
+
+  // Scroll-in animations
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  // BibTeX toggles
+  document.querySelectorAll('.bibtex-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      const wasOpen = target.classList.contains('active');
+      document.querySelectorAll('.bibtex-block').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.bibtex-btn').forEach(b => b.textContent = '{ BibTeX }');
+      if (!wasOpen) { target.classList.add('active'); btn.textContent = '{ Close }'; }
+    });
+  });
+
+  // Nav active highlight on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const spyObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('text-gold-300');
+          link.classList.add('text-slate-400');
+          if (link.getAttribute('href') === '#' + e.target.id) {
+            link.classList.remove('text-slate-400');
+            link.classList.add('text-gold-300');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-40% 0px -50% 0px' });
+  sections.forEach(s => spyObserver.observe(s));
+</script>
+
+</body>
+</html>
