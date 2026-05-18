@@ -496,138 +496,170 @@
   </div>
 </section>
 
-<!-- LEARNING JOURNAL -->
 
-<section id="learning" class="py-24 bg-navy-900/30">
-  <div class="max-w-6xl mx-auto px-6">
-
-```
-<div class="reveal text-center mb-16">
-  <span class="section-label">
-    <span class="gold-line"></span>Learning Journey
-  </span>
-
-  <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 font-bold">
-    Research & Engineering Learnings
-  </h2>
-
-  <p class="text-slate-400 mt-3 text-sm max-w-2xl mx-auto">
-    A continuously evolving collection of technical learnings,
-    debugging experiences, infrastructure lessons, and research insights
-    gathered while working on multimodal AI systems, NLP, and large-scale model inference.
-  </p>
-</div>
 
 <!-- LEARNING JOURNAL -->
 
-<section id="learning" class="py-24 bg-navy-900/30">
-  <div class="max-w-6xl mx-auto px-6">
+<!-- EXPANDABLE LEARNING CARD -->
+
+<div class="card reveal reveal-delay-2 p-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <span class="badge">May 2026</span>
 
 ```
-<div class="reveal text-center mb-16">
-  <span class="section-label">
-    <span class="gold-line"></span>Learning Journey
-  </span>
+<span class="text-xs text-slate-500 font-mono">
+  Research Infrastructure
+</span>
+```
 
-  <h2 class="font-display text-3xl md:text-4xl text-mist mt-4 font-bold">
-    Research & Engineering Learnings
-  </h2>
+  </div>
 
-  <p class="text-slate-400 mt-3 text-sm max-w-2xl mx-auto">
-    A continuously evolving collection of technical learnings,
-    debugging experiences, infrastructure lessons, and research insights
-    gathered while working on multimodal AI systems, NLP, and large-scale model inference.
+  <h3 class="font-display text-lg font-semibold text-mist mb-3">
+    Running Large Multimodal Models on HPC Clusters
+  </h3>
+
+  <p class="text-slate-400 text-sm leading-relaxed mb-4">
+    Built and stabilized multimodal inference pipelines for
+    InternVL3.5, Qwen3.5, and Gemma-4 on SLURM-based HPC clusters.
+    Solved issues related to transformers remote-code loading,
+    CUDA/PyTorch compatibility, offline HuggingFace caching,
+    and large-model deployment infrastructure.
   </p>
-</div>
 
+  <div class="flex flex-wrap gap-2 mb-5">
+    <span class="pill" style="font-size:0.65rem;">SLURM</span>
+    <span class="pill" style="font-size:0.65rem;">CUDA</span>
+    <span class="pill" style="font-size:0.65rem;">Transformers</span>
+    <span class="pill" style="font-size:0.65rem;">InternVL</span>
+    <span class="pill" style="font-size:0.65rem;">Qwen</span>
+    <span class="pill" style="font-size:0.65rem;">Gemma</span>
+    <span class="pill" style="font-size:0.65rem;">HPC</span>
+  </div>
+
+  <!-- BUTTON -->
+
+<button
+ onclick="toggleLearning(this)"
+ class="text-sm px-4 py-2 rounded-md border border-gold-400/30
+        text-gold-300 hover:bg-gold-400/10 transition-colors">
+Read More </button>
+
+  <!-- EXPANDABLE CONTENT -->
+
+  <div class="learning-expand hidden mt-6 border-t border-white/5 pt-6">
+
+```
 <div class="space-y-6">
 
-  <!-- ENTRY -->
-  <div class="card reveal p-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <span class="badge">May 2026</span>
-      <span class="text-xs text-slate-500 font-mono">
-        Multimodal Infrastructure
-      </span>
-    </div>
+  <div>
+    <h4 class="text-mist font-semibold mb-2">
+      Major Problems Faced
+    </h4>
 
-    <h3 class="font-display text-lg font-semibold text-mist mb-3">
-      Running InternVL3.5 on HPC Clusters
-    </h3>
-
-    <p class="text-slate-400 text-sm leading-relaxed mb-4">
-      Learned how HuggingFace handles dynamic module caching for
-      <code>trust_remote_code=True</code> models in offline HPC environments.
-      Solved issues related to transformers module caching,
-      CUDA/PyTorch mismatches, SLURM environment setup,
-      and multimodal inference stability.
-    </p>
-
-    <div class="flex flex-wrap gap-2">
-      <span class="pill">Transformers</span>
-      <span class="pill">SLURM</span>
-      <span class="pill">CUDA</span>
-      <span class="pill">InternVL</span>
-      <span class="pill">HPC</span>
-    </div>
-  </div>
-
-  <!-- ENTRY -->
-  <div class="card reveal reveal-delay-1 p-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <span class="badge">April 2026</span>
-      <span class="text-xs text-slate-500 font-mono">
-        Multimodal Reasoning
-      </span>
-    </div>
-
-    <h3 class="font-display text-lg font-semibold text-mist mb-3">
-      Challenges in Flowchart Understanding
-    </h3>
-
-    <p class="text-slate-400 text-sm leading-relaxed mb-4">
-      Explored limitations of multimodal models in extracting
-      reliable graph structure information from flowcharts.
-      Observed failures in loop detection, edge extraction,
-      reverse-edge reasoning, and multi-hop traversal.
-    </p>
-
-    <div class="flex flex-wrap gap-2">
-      <span class="pill">Graph Extraction</span>
-      <span class="pill">Flowcharts</span>
-      <span class="pill">Vision-Language Models</span>
-      <span class="pill">Reasoning</span>
-    </div>
-  </div>
-
-  <!-- ENTRY -->
-  <div class="card reveal reveal-delay-2 p-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <span class="badge">Ongoing</span>
-      <span class="text-xs text-slate-500 font-mono">
-        Research Notes
-      </span>
-    </div>
-
-    <h3 class="font-display text-lg font-semibold text-mist mb-3">
-      Current Learning Focus
-    </h3>
-
-    <ul class="text-slate-400 text-sm space-y-2">
-      <li>• Multimodal code generation pipelines</li>
-      <li>• Graph-based reasoning in VLMs</li>
-      <li>• Quantization & memory optimization</li>
-      <li>• Large-scale inference benchmarking</li>
-      <li>• Prompt engineering for structured QA</li>
-      <li>• Model hallucination analysis</li>
+    <ul class="text-slate-400 text-sm space-y-2 leading-relaxed">
+      <li>• Qwen multimodal models generating gibberish outputs</li>
+      <li>• Unsupported <code>qwen3_5</code> architecture errors</li>
+      <li>• <code>trust_remote_code=True</code> failures on offline clusters</li>
+      <li>• Missing HuggingFace dynamic module cache files</li>
+      <li>• SLURM unable to detect Conda/Python environments</li>
+      <li>• CUDA and PyTorch version incompatibilities</li>
+      <li>• GPU initialization and driver mismatch issues</li>
+      <li>• Environment corruption after repeated dependency swaps</li>
     </ul>
   </div>
 
+  <div>
+    <h4 class="text-mist font-semibold mb-2">
+      Key Technical Learnings
+    </h4>
+
+    <ul class="text-slate-400 text-sm space-y-2 leading-relaxed">
+      <li>• How HuggingFace handles dynamic remote-code caching internally</li>
+      <li>• Proper offline deployment workflow for multimodal VLMs</li>
+      <li>• Stable SLURM environment setup for large model inference</li>
+      <li>• Multi-GPU memory allocation and fragmentation handling</li>
+      <li>• Importance of smoke testing before full benchmark execution</li>
+      <li>• Practical debugging strategies for large-scale multimodal systems</li>
+    </ul>
+  </div>
+
+  <div>
+    <h4 class="text-mist font-semibold mb-2">
+      Final Stable Stack
+    </h4>
+
+    <div class="grid md:grid-cols-2 gap-3 text-sm">
+
+      <div class="p-4 rounded-lg bg-navy-950/40 border border-white/5">
+        <p class="text-gold-300 mb-2 font-mono text-xs">
+          Frameworks
+        </p>
+
+        <ul class="text-slate-400 space-y-1">
+          <li>• PyTorch 2.5.1</li>
+          <li>• Transformers 4.56.2</li>
+          <li>• Accelerate</li>
+          <li>• BitsAndBytes</li>
+        </ul>
+      </div>
+
+      <div class="p-4 rounded-lg bg-navy-950/40 border border-white/5">
+        <p class="text-gold-300 mb-2 font-mono text-xs">
+          Infrastructure
+        </p>
+
+        <ul class="text-slate-400 space-y-1">
+          <li>• SLURM HPC Cluster</li>
+          <li>• NVIDIA A40 GPUs</li>
+          <li>• CUDA 12.x</li>
+          <li>• HuggingFace Offline Cache</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="p-4 rounded-lg border border-gold-400/10 bg-gold-400/5">
+    <p class="text-sm text-slate-300 leading-relaxed">
+      <span class="text-gold-300 font-semibold">
+        Biggest Learning:
+      </span>
+
+      In large-scale multimodal research, infrastructure stability
+      becomes as important as model reasoning itself.
+      Building reliable pipelines for inference, caching,
+      deployment, and evaluation is a major part of real-world AI research.
+    </p>
+  </div>
+
 </div>
 ```
 
   </div>
-</section>
+</div>
+
+<!-- SCRIPT -->
+
+<script>
+function toggleLearning(btn) {
+  const content = btn.nextElementSibling;
+
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    btn.innerText = 'Show Less';
+  } else {
+    content.classList.add('hidden');
+    btn.innerText = 'Read More';
+  }
+}
+</script>
+
+  
+
+  
+
+
 
     
 
