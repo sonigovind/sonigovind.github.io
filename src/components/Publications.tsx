@@ -251,17 +251,18 @@ export default function Publications() {
 
           {/* Filter tabs */}
           <div
-            className="flex items-center rounded-xl p-1 gap-1"
+            className="flex items-center rounded-xl p-1 gap-1 overflow-x-auto"
             style={{
               background: 'var(--card-bg)',
               border: '1px solid var(--border)',
+              scrollbarWidth: 'none',
             }}
           >
             {FILTERS.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className="text-xs px-3 py-1.5 rounded-lg transition-all duration-200 font-medium"
+                className="text-xs px-3 py-1.5 rounded-lg transition-all duration-200 font-medium flex-shrink-0"
                 style={{
                   background: filter === f ? 'var(--accent)' : 'transparent',
                   color: filter === f ? 'var(--bg)' : 'var(--text-2)',

@@ -75,28 +75,55 @@ export default function Hero() {
         />
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-24 relative z-10 w-full">
+      <div className="max-w-6xl mx-auto px-6 py-16 lg:py-24 relative z-10 w-full">
         <div className="grid lg:grid-cols-[1fr_auto] gap-16 items-center">
           {/* Left — Text Content */}
           <div className="max-w-2xl">
             {/* Label row */}
-            <motion.div {...fadeUp(0.1)} className="flex items-center gap-3 mb-8">
-              <div
-                className="w-2 h-2 rounded-full animate-pulse-slow"
-                style={{ background: 'var(--accent)' }}
-              />
-              <span className="section-label">Research Scholar</span>
-              <span style={{ color: 'var(--text-3)', fontSize: '0.7rem' }}>·</span>
-              <span
-                className="text-xs px-3 py-1 rounded-full font-mono"
-                style={{
-                  background: 'var(--accent-subtle)',
-                  border: '1px solid var(--border-hover)',
-                  color: 'var(--accent)',
-                }}
-              >
-                IIT Bombay
-              </span>
+            <motion.div {...fadeUp(0.1)} className="flex items-center gap-3 mb-8 flex-wrap">
+              {/* Mobile-only avatar */}
+              <div className="lg:hidden flex-shrink-0">
+                <div
+                  className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center"
+                  style={{ background: 'var(--bg-2)', border: '2px solid var(--accent-subtle)' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/profile.jpeg"
+                    alt={SITE_CONFIG.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                  <span
+                    className="font-display font-bold text-lg hidden items-center justify-center"
+                    style={{ color: 'var(--accent)' }}
+                  >
+                    GS
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div
+                  className="w-2 h-2 rounded-full animate-pulse-slow"
+                  style={{ background: 'var(--accent)' }}
+                />
+                <span className="section-label">Research Scholar</span>
+                <span style={{ color: 'var(--text-3)', fontSize: '0.7rem' }}>·</span>
+                <span
+                  className="text-xs px-3 py-1 rounded-full font-mono"
+                  style={{
+                    background: 'var(--accent-subtle)',
+                    border: '1px solid var(--border-hover)',
+                    color: 'var(--accent)',
+                  }}
+                >
+                  IIT Bombay
+                </span>
+              </div>
             </motion.div>
 
             {/* Name */}
@@ -161,12 +188,12 @@ export default function Hero() {
             </motion.div>
           </div>
 
-          {/* Right — Profile + Stats */}
+          {/* Right — Profile + Stats (desktop only) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] as const }}
-            className="flex flex-col items-center gap-8"
+            className="hidden lg:flex flex-col items-center gap-8"
           >
             {/* Profile Photo */}
             <div className="relative">
