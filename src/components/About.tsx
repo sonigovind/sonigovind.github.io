@@ -3,30 +3,28 @@
 import { motion } from 'framer-motion';
 import { BIO, SKILLS } from '@/data';
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 30 },
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-80px' },
-  transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] as const },
-};
+  transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as const },
+});
 
 export default function About() {
   return (
     <section id="about" className="py-24 section-alt">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-          {/* Left — Bio */}
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="grid lg:grid-cols-[1fr_340px] gap-16 items-start">
+
+          {/* ── Left: bio ───────────────────────────────────────── */}
           <div>
-            <motion.div {...fadeInUp}>
-              <span className="section-label flex items-center gap-2 mb-4">
-                <span
-                  className="inline-block w-8 h-px"
-                  style={{ background: 'var(--accent)' }}
-                />
+            <motion.div {...fadeUp(0)}>
+              <span className="section-label flex items-center gap-2 mb-5">
+                <span className="inline-block w-6 h-px" style={{ background: 'var(--accent)' }} />
                 About
               </span>
               <h2
-                className="font-display font-extrabold text-3xl lg:text-4xl mb-8 leading-tight"
+                className="font-display font-bold text-3xl lg:text-4xl mb-8 leading-tight"
                 style={{ color: 'var(--text)' }}
               >
                 Advancing Language AI<br />
@@ -38,85 +36,68 @@ export default function About() {
               {BIO.map((para, i) => (
                 <motion.p
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-60px' }}
-                  transition={{ duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] as const }}
+                  {...fadeUp(0.1 + i * 0.08)}
                   className="leading-relaxed text-sm"
-                  style={{ color: 'var(--text-2)' }}
+                  style={{ color: 'var(--text-2)', lineHeight: '1.75' }}
                   dangerouslySetInnerHTML={{ __html: para }}
                 />
               ))}
             </div>
-
           </div>
 
-          {/* Right — Skills */}
-          <div className="space-y-5">
+          {/* ── Right: expertise + qualifications ───────────────── */}
+          <div className="space-y-7 lg:pt-[68px]">
+
+            {/* Technical expertise as clean text sections */}
             {SKILLS.map((cat, i) => (
               <motion.div
                 key={cat.label}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.6, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] as const }}
-                className="card-base p-5"
+                {...fadeUp(0.15 + i * 0.1)}
               >
                 <p
-                  className="text-xs mb-3 font-mono"
-                  style={{ color: 'var(--text-3)', letterSpacing: '0.06em' }}
+                  className="text-xs font-medium mb-2"
+                  style={{
+                    color: 'var(--accent)',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    fontFamily: 'var(--font-jetbrains)',
+                  }}
                 >
                   {cat.label}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {cat.skills.map((skill) => (
-                    <motion.span
-                      key={skill}
-                      className="pill"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {skill}
-                    </motion.span>
-                  ))}
-                </div>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                  {cat.skills.join(' · ')}
+                </p>
+                {i < SKILLS.length - 1 && (
+                  <div className="mt-5 divider-line" />
+                )}
               </motion.div>
             ))}
 
-            {/* Education quick stats */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-              className="grid grid-cols-3 gap-3"
-            >
-              {[
-                { val: '8.33', label: 'PhD CPI' },
-                { val: '87.4%', label: 'M.Tech Agg.' },
-                { val: 'GATE ✓', label: 'Qualified' },
-              ].map(({ val, label }) => (
-                <div
-                  key={label}
-                  className="p-4 rounded-xl text-center"
-                  style={{
-                    background: 'var(--card-bg)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <p
-                    className="font-display font-bold text-lg"
-                    style={{ color: 'var(--accent)' }}
-                  >
-                    {val}
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>
-                    {label}
-                  </p>
-                </div>
-              ))}
+            <div className="divider-line" />
+
+            {/* Qualifications */}
+            <motion.div {...fadeUp(0.15 + SKILLS.length * 0.1)}>
+              <p
+                className="text-xs font-medium mb-3"
+                style={{
+                  color: 'var(--accent)',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--font-jetbrains)',
+                }}
+              >
+                Qualifications
+              </p>
+              <div className="space-y-2 text-sm" style={{ color: 'var(--text-2)', lineHeight: '1.7' }}>
+                <p>PhD CS · IIT Bombay · CPI 8.33</p>
+                <p>M.Tech Data Science · JNU Delhi · 87.4%</p>
+                <p>GATE Qualified (2020, 2021, 2024)</p>
+                <p>UGC NET Qualified (2023)</p>
+              </div>
             </motion.div>
           </div>
+
         </div>
       </div>
     </section>

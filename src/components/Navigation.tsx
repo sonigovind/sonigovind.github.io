@@ -77,14 +77,14 @@ export default function Navigation() {
           {/* Logo */}
           <a
             href="#home"
-            className="flex items-center gap-2 font-display font-bold text-sm tracking-wide"
-            style={{ color: 'var(--text)', textDecoration: 'none' }}
+            className="flex items-center gap-2.5 font-display font-semibold text-sm"
+            style={{ color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.01em' }}
           >
             <span
-              className="font-mono text-xs"
-              style={{ color: 'var(--accent)' }}
+              className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold font-mono flex-shrink-0"
+              style={{ background: 'var(--accent)', color: '#FFFFFF', fontSize: '0.65rem', letterSpacing: '0.04em' }}
             >
-              gs/
+              GS
             </span>
             <span>{SITE_CONFIG.name}</span>
           </a>

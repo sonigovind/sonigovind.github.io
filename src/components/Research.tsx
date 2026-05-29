@@ -38,14 +38,14 @@ export default function Research() {
             <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
           </span>
           <h2
-            className="font-display font-extrabold text-3xl lg:text-4xl mb-4"
+            className="font-display font-bold text-3xl lg:text-4xl mb-4"
             style={{ color: 'var(--text)' }}
           >
-            What I Work On
+            Research Areas
           </h2>
           <p className="text-sm max-w-lg mx-auto" style={{ color: 'var(--text-2)' }}>
-            My active research directions span multimodal AI, low-resource NLP, and
-            language model fine-tuning.
+            Active research directions spanning multimodal AI, low-resource NLP,
+            and language model adaptation.
           </p>
         </motion.div>
 

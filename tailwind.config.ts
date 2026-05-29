@@ -6,18 +6,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: '#050d1b',
-          900: '#0a1628',
-          800: '#0f2040',
-          700: '#162844',
+        slate: {
+          950: '#0B1120',
+          900: '#111827',
+          800: '#1C2D40',
+          700: '#253548',
         },
-        gold: {
-          400: '#f0b429',
-          300: '#f7d072',
-          200: '#fde68a',
+        royal: {
+          700: '#1E3A8A',
+          600: '#1D4ED8',
+          500: '#2563EB',
+          400: '#60A5FA',
+          300: '#93C5FD',
         },
-        mist: '#e8eef7',
       },
       fontFamily: {
         display: ['var(--font-syne)', 'sans-serif'],
@@ -28,43 +29,20 @@ const config: Config = {
         '300%': '300%',
       },
       animation: {
-        'float-a': 'floatA 10s ease-in-out infinite',
-        'float-b': 'floatB 14s ease-in-out infinite',
-        'float-c': 'floatC 12s ease-in-out infinite',
         'shimmer': 'shimmer 2.5s linear infinite',
-        'gradient-x': 'gradientX 8s ease infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'spin-slow': 'spin 20s linear infinite',
       },
       keyframes: {
-        floatA: {
-          '0%,100%': { transform: 'translate(0,0) scale(1)' },
-          '33%': { transform: 'translate(40px,-60px) scale(1.06)' },
-          '66%': { transform: 'translate(-30px,30px) scale(0.94)' },
-        },
-        floatB: {
-          '0%,100%': { transform: 'translate(0,0) scale(1)' },
-          '50%': { transform: 'translate(-50px,-40px) scale(1.08)' },
-        },
-        floatC: {
-          '0%,100%': { transform: 'translate(0,0) scale(1)' },
-          '40%': { transform: 'translate(30px,50px) scale(0.95)' },
-          '80%': { transform: 'translate(-20px,-20px) scale(1.04)' },
-        },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
-        gradientX: {
-          '0%,100%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
-        },
       },
       boxShadow: {
-        'glow-gold': '0 0 40px rgba(240, 180, 41, 0.25)',
-        'glow-gold-lg': '0 0 80px rgba(240, 180, 41, 0.2)',
-        'card': '0 4px 24px rgba(0,0,0,0.3)',
-        'card-hover': '0 20px 60px rgba(0,0,0,0.5)',
+        'glow-blue': '0 0 40px rgba(37, 99, 235, 0.2)',
+        'glow-blue-lg': '0 0 80px rgba(37, 99, 235, 0.15)',
+        'card': '0 2px 12px rgba(15,23,42,0.08)',
+        'card-hover': '0 12px 40px rgba(30,58,138,0.14)',
       },
     },
   },

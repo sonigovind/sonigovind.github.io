@@ -19,3 +19,6 @@ Thumbs.db
 
 # Debug
 npm-debug.log*
+
+# Local docs (not for GitHub)
+README.md

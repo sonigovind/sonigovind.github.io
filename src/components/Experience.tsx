@@ -98,11 +98,11 @@ export default function Experience() {
         >
           <span className="section-label flex items-center justify-center gap-2 mb-4">
             <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
-            Journey
+            Background
             <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
           </span>
           <h2
-            className="font-display font-extrabold text-3xl lg:text-4xl"
+            className="font-display font-bold text-3xl lg:text-4xl"
             style={{ color: 'var(--text)' }}
           >
             Experience &amp; Education
