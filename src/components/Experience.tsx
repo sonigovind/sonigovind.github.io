@@ -90,23 +90,19 @@ export default function Experience() {
       <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] as const }}
-          className="text-center mb-16"
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
+          className="mb-12"
         >
-          <span className="section-label flex items-center justify-center gap-2 mb-4">
-            <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
-            Background
-            <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
-          </span>
           <h2
-            className="font-display font-bold text-3xl lg:text-4xl"
+            className="font-display font-bold text-2xl lg:text-3xl mb-3"
             style={{ color: 'var(--text)' }}
           >
             Experience &amp; Education
           </h2>
+          <div className="h-px w-16" style={{ background: 'var(--accent)' }} />
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-12">

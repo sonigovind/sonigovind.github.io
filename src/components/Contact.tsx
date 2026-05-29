@@ -40,26 +40,21 @@ export default function Contact() {
     <section id="contact" className="py-24 section-alt">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] as const }}
-          className="text-center mb-12"
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
+          className="mb-10"
         >
-          <span className="section-label flex items-center justify-center gap-2 mb-4">
-            <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
-            Contact
-            <span className="inline-block w-8 h-px" style={{ background: 'var(--accent)' }} />
-          </span>
           <h2
-            className="font-display font-extrabold text-3xl lg:text-4xl mb-4"
+            className="font-display font-bold text-2xl lg:text-3xl mb-3"
             style={{ color: 'var(--text)' }}
           >
-            Get In Touch
+            Contact
           </h2>
-          <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--text-2)' }}>
-            Open to research collaborations, academic discussions, and opportunities in NLP
-            and multilingual AI.
+          <div className="h-px w-16 mb-4" style={{ background: 'var(--accent)' }} />
+          <p className="text-sm" style={{ color: 'var(--text-2)' }}>
+            Open to research collaborations, academic discussions, and opportunities in NLP and multilingual AI.
           </p>
         </motion.div>
 
