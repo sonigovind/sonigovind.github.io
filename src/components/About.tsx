@@ -49,37 +49,6 @@ export default function About() {
               ))}
             </div>
 
-            {/* Currently working on */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
-              className="mt-8 p-5 rounded-xl"
-              style={{
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ background: '#22c55e' }}
-                />
-                <span className="section-label" style={{ fontSize: '0.65rem' }}>
-                  Currently Working On
-                </span>
-              </div>
-              <p
-                className="text-sm font-display font-semibold"
-                style={{ color: 'var(--text)' }}
-              >
-                CFGBench: Benchmarking Multimodal Code Generation from Control Flow Graphs
-              </p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>
-                IIT Bombay · PhD Research · 2024–Present
-              </p>
-            </motion.div>
           </div>
 
           {/* Right — Skills */}
