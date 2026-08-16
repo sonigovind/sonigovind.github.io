@@ -7,6 +7,7 @@ import math
 import os
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -154,13 +155,26 @@ VENUE_PATTERNS = [
 
 # Strict domain gates. Broad words like "code", "attention", "interpretation", or "model"
 # are intentionally insufficient on their own.
-MM_VISUAL = re.compile(r"\b(multimodal|vision[- ]language|vlm|screenshot|screen[- ]to[- ]code|ui[- ]to[- ]code|gui[- ]to[- ]code|image[- ]to[- ]code|flowchart|uml|diagram[- ]to[- ]code|design[- ]to[- ]code|webpage screenshot|visual programming)\b", re.I)
-MM_CODEGEN = re.compile(r"\b(code generation|generate(?:s|d|ing)? code|program synthesis|source code generation|frontend generation|html\s*/?\s*css|implementation generation|to code|code from|program from)\b", re.I)
+MM_DIRECT = re.compile(
+    r"\b(multimodal code generation|vision[- ]language code generation|"
+    r"(?:image|screenshot|screen|ui|gui|flowchart|uml|diagram|design|wireframe|mockup|webpage)[- ]to[- ]code|"
+    r"code generation from (?:an? )?(?:image|screenshot|screen|ui|gui|flowchart|uml|diagram|design|wireframe|mockup|webpage)|"
+    r"generate(?:s|d|ing)? (?:source |frontend |web )?code from (?:an? )?(?:image|screenshot|ui|gui|flowchart|uml|diagram|design|wireframe|mockup|webpage))\b",
+    re.I,
+)
+MM_VISUAL_STRONG = re.compile(
+    r"\b(screenshot|screen[- ]to[- ]code|ui|gui|flowchart|uml|diagram|design mockup|wireframe|webpage screenshot|visual programming|vision[- ]language|vlm)\b",
+    re.I,
+)
+MM_SOFTWARE_STRONG = re.compile(
+    r"\b(source code|frontend code|web code|code generation|program synthesis|program generation|implementation generation|html|css|javascript|typescript|react|software development|programming)\b",
+    re.I,
+)
 AG_AGENT = re.compile(r"\b(coding agent|software engineering agent|software agent|swe-agent|swe bench|swe-bench|agentic software|autonomous software engineer|repository[- ]level agent|program repair agent|debugging agent|testing agent|llm agent)\b", re.I)
-AG_SE = re.compile(r"\b(repository|github issue|bug fix|bug fixing|debugging|program repair|software test|unit test|code review|codebase|source code|software engineering|patch generation|issue resolution|developer task)\b", re.I)
+AG_SE = re.compile(r"\b(repositor(?:y|ies)|github issues?|bug fix|bug fixing|debugging|program repair|software tests?|unit tests?|code review|codebase|source code|software engineering|patch generation|issue resolution|developer task)\b", re.I)
 MI_METHOD = re.compile(r"\b(mechanistic interpretability|activation patch(?:ing)?|path patch(?:ing)?|causal tracing|sparse autoencoder|sae features?|transformer circuits?|dictionary learning|superposition|feature steering|activation steering|residual stream|causal scrubbing|representation probing|linear probing)\b", re.I)
 MI_MODEL = re.compile(r"\b(language model|llm|transformer|vision[- ]language|vlm|neural network|deep network|foundation model|code model|multimodal model)\b", re.I)
-XAI_METHOD = re.compile(r"\b(explainable ai|explainable artificial intelligence|interpretable machine learning|model explanation|explanation faithfulness|counterfactual explanation|feature attribution|shap|lime|tcav|concept[- ]based|concept bottleneck|saliency map|rationale faithfulness|post[- ]hoc explanation|inherently interpretable)\b", re.I)
+XAI_METHOD = re.compile(r"\b(explainable ai|explainable artificial intelligence|interpretable machine learning|model explanations?|explanation faithfulness|counterfactual explanations?|feature attribution|shap|lime|tcav|concept[- ]based|concept bottleneck|saliency maps?|rationale faithfulness|post[- ]hoc explanations?|inherently interpretable)\b", re.I)
 XAI_MODEL = re.compile(r"\b(machine learning|neural network|deep learning|classifier|language model|llm|transformer|vision model|foundation model|artificial intelligence|ai system)\b", re.I)
 ADJACENT_WATCH = re.compile(r"\b(code model|program analysis|program repair|software testing|long context|sequence model|foundation model evaluation|agent evaluation|model robustness|ai safety|reasoning|tool use)\b", re.I)
 
@@ -217,26 +231,42 @@ def api_url(endpoint: str, params: dict[str, Any]) -> str:
     return "https://api.openalex.org/" + endpoint + "?" + urllib.parse.urlencode(p)
 
 
-def get_json(url: str, retries: int = 4) -> dict[str, Any]:
+def get_json(url: str, retries: int = 7) -> dict[str, Any]:
     last = None
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "govind-research-radar/3.0"})
-            with urllib.request.urlopen(req, timeout=45) as r:
+            req = urllib.request.Request(url, headers={"User-Agent": "govind-research-radar/4.0"})
+            with urllib.request.urlopen(req, timeout=60) as r:
                 return json.load(r)
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code == 429:
+                retry_after = e.headers.get("Retry-After")
+                try:
+                    wait = float(retry_after) if retry_after else min(3 * (attempt + 1), 20)
+                except Exception:
+                    wait = min(3 * (attempt + 1), 20)
+                print(f"OpenAlex rate limit; waiting {wait:.1f}s")
+                time.sleep(wait)
+                continue
+            if 500 <= e.code < 600:
+                time.sleep(min(2 ** attempt, 12))
+                continue
+            raise
         except Exception as e:
             last = e
-            time.sleep(min(2 ** attempt, 8))
+            time.sleep(min(2 ** attempt, 12))
     raise RuntimeError(f"request failed: {last}")
 
 
-def search_works(query: str, date_from: str, pages: int) -> list[dict[str, Any]]:
+def search_works(query: str, date_from: str, pages: int, date_to: str | None = None) -> list[dict[str, Any]]:
     cursor = "*"
     out: list[dict[str, Any]] = []
+    date_to = date_to or BACKFILL_TO
     for _ in range(pages):
         params = {
             "search": query,
-            "filter": f"from_publication_date:{date_from},to_publication_date:{BACKFILL_TO}",
+            "filter": f"from_publication_date:{date_from},to_publication_date:{date_to}",
             "per_page": 100,
             "cursor": cursor,
             "sort": "publication_date:desc",
@@ -295,9 +325,13 @@ def normalize_venue(s: str) -> str:
 
 def classify(text: str) -> tuple[str, list[str], int]:
     scores: dict[str, int] = {}
-    # Strict conjunctions prevent domain leakage.
-    if MM_VISUAL.search(text) and MM_CODEGEN.search(text):
-        scores["Multimodal Code Generation"] = 5 + len(MM_VISUAL.findall(text)) + len(MM_CODEGEN.findall(text))
+    # Multimodal code generation requires an explicit visual→code task, or
+    # strong visual/software evidence together. Generic multimodal/scientific
+    # diagram papers are intentionally excluded.
+    if MM_DIRECT.search(text):
+        scores["Multimodal Code Generation"] = 10 + len(MM_DIRECT.findall(text))
+    elif MM_VISUAL_STRONG.search(text) and MM_SOFTWARE_STRONG.search(text):
+        scores["Multimodal Code Generation"] = 7 + len(MM_VISUAL_STRONG.findall(text)) + len(MM_SOFTWARE_STRONG.findall(text))
     if AG_AGENT.search(text) and AG_SE.search(text):
         scores["Agentic Software Engineering"] = 5 + len(AG_AGENT.findall(text)) + len(AG_SE.findall(text))
     if MI_METHOD.search(text) and MI_MODEL.search(text):
@@ -496,11 +530,11 @@ def merge_papers(existing: dict[str, dict[str, Any]], incoming: list[dict[str, A
 
 def load_state() -> dict[str, Any]:
     if not STATE_FILE.exists():
-        return {"version": 3, "papers": {}, "authors": {}, "last_run": ""}
+        return {"version": 4, "papers": {}, "authors": {}, "last_run": ""}
     try:
         return json.loads(STATE_FILE.read_text(encoding="utf-8"))
     except Exception:
-        return {"version": 3, "papers": {}, "authors": {}, "last_run": ""}
+        return {"version": 4, "papers": {}, "authors": {}, "last_run": ""}
 
 
 def save_state(state: dict[str, Any]):
@@ -508,24 +542,42 @@ def save_state(state: dict[str, Any]):
 
 
 def collect_topics(full: bool) -> list[dict[str, Any]]:
-    date_from = BACKFILL_FROM if full else RECENT_FROM
-    pages = 2 if full else 1
-    jobs = [(area, q) for area, cfg in AREAS.items() for q in cfg["queries"]]
     raw: list[dict[str, Any]] = []
+
+    if full:
+        # Year-stratified backfill prevents the newest papers from consuming
+        # the entire result window and gives every year 2020–current coverage.
+        jobs = []
+        for area, cfg in AREAS.items():
+            for q in cfg["queries"]:
+                for year in range(2020, TODAY.year + 1):
+                    y_from = f"{year}-01-01"
+                    y_to = min(f"{year}-12-31", BACKFILL_TO)
+                    jobs.append((area, q, y_from, y_to, 1))
+    else:
+        jobs = [(area, q, RECENT_FROM, BACKFILL_TO, 1) for area, cfg in AREAS.items() for q in cfg["queries"]]
+
     def worker(job):
-        area, q = job
-        return area, q, search_works(q, date_from, pages)
-    with ThreadPoolExecutor(max_workers=4) as ex:
+        area, q, d_from, d_to, pages = job
+        works = search_works(q, d_from, pages, d_to)
+        # Small spacing keeps anonymous/public OpenAlex usage polite.
+        time.sleep(0.15)
+        return area, q, d_from[:4], works
+
+    # Keep concurrency modest to avoid OpenAlex 429s.
+    with ThreadPoolExecutor(max_workers=2) as ex:
         futs = [ex.submit(worker, j) for j in jobs]
         for fut in as_completed(futs):
             try:
-                area, q, works = fut.result()
+                area, q, year, works = fut.result()
                 kept = 0
                 for w in works:
                     item = build_item(w)
                     if item and item["primary_area"] in AREAS:
-                        raw.append(item); kept += 1
-                print(f"topic {area} | {q}: {kept}/{len(works)} kept")
+                        raw.append(item)
+                        kept += 1
+                if kept:
+                    print(f"topic {area} | {q} | {year}: {kept}/{len(works)} kept")
             except Exception as e:
                 print("topic query failed:", e)
     return raw
@@ -533,40 +585,46 @@ def collect_topics(full: bool) -> list[dict[str, Any]]:
 
 def collect_authors(state: dict[str, Any], full: bool) -> list[dict[str, Any]]:
     authors_state = state.setdefault("authors", {})
-    # Resolve only missing identities; persist IDs in cache.
+
+    # Resolve identities sequentially to reduce same-name errors and rate limits.
     missing = [(n, aff) for n, (aff, _) in WATCH_RESEARCHERS.items() if not (authors_state.get(n) or {}).get("id")]
-    if missing:
-        with ThreadPoolExecutor(max_workers=4) as ex:
-            fmap = {ex.submit(resolve_author, n, aff): (n, aff) for n, aff in missing}
-            for fut in as_completed(fmap):
-                n, aff = fmap[fut]
-                try:
-                    a = fut.result()
-                    if a:
-                        authors_state[n] = {"id": a.get("id", ""), "display_name": a.get("display_name", n), "affiliation": aff, "category": WATCH_RESEARCHERS[n][1]}
-                        print("resolved author:", n, a.get("id", ""))
-                except Exception as e:
-                    print("author resolve failed:", n, e)
+    for n, aff in missing:
+        try:
+            a = resolve_author(n, aff)
+            if a:
+                authors_state[n] = {
+                    "id": a.get("id", ""),
+                    "display_name": a.get("display_name", n),
+                    "affiliation": aff,
+                    "category": WATCH_RESEARCHERS[n][1],
+                }
+                print("resolved author:", n, a.get("id", ""))
+        except Exception as e:
+            print("author resolve failed:", n, e)
+        time.sleep(0.35)
+
     date_from = BACKFILL_FROM if full else RECENT_FROM
-    jobs = [(n, m) for n, m in authors_state.items() if m.get("id")]
+    pages = 2 if full else 1
     raw: list[dict[str, Any]] = []
-    def worker(job):
-        n, m = job
-        return n, author_works(m["id"], date_from, 1)
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        fmap = {ex.submit(worker, j): j[0] for j in jobs}
-        for fut in as_completed(fmap):
-            n = fmap[fut]
-            try:
-                _, works = fut.result()
-                kept = 0
-                for w in works:
-                    item = build_item(w, forced_watch=n)
-                    if item:
-                        raw.append(item); kept += 1
-                print(f"author {n}: {kept}/{len(works)} kept")
-            except Exception as e:
-                print("author works failed:", n, e)
+
+    # Author retrieval is deliberately sequential. There are few watched
+    # researchers, and reliability matters more than shaving seconds off CI.
+    for n, m in authors_state.items():
+        if not m.get("id"):
+            continue
+        try:
+            works = author_works(m["id"], date_from, pages)
+            kept = 0
+            for w in works:
+                item = build_item(w, forced_watch=n)
+                if item:
+                    raw.append(item)
+                    kept += 1
+            print(f"author {n}: {kept}/{len(works)} kept")
+        except Exception as e:
+            print("author works failed:", n, e)
+        time.sleep(0.4)
+
     return raw
 
 
@@ -662,7 +720,7 @@ def write_csv(name: str, rows):
 
 
 def balanced_recent(items: list[dict[str, Any]], limit: int = 15) -> list[dict[str, Any]]:
-    recent = [i for i in items if i["primary_area"] in AREAS and i.get("published") and i["published"] >= RECENT_FROM and i["score"] >= 72]
+    recent = [i for i in items if i["primary_area"] in AREAS and i.get("published") and i["published"] >= RECENT_FROM and i["score"] >= 75]
     recent.sort(key=lambda i: (-i["score"], -(i["citations"] or 0), i["published"]), reverse=False)
     selected=[]; used=set()
     for area in AREAS:
@@ -678,7 +736,7 @@ def balanced_recent(items: list[dict[str, Any]], limit: int = 15) -> list[dict[s
 
 def main():
     state=load_state()
-    full = MODE == "full" or not state.get("papers") or state.get("version") != 3
+    full = MODE == "full" or not state.get("papers") or state.get("version") != 4
     print("Research Radar mode:", "FULL BACKFILL" if full else "INCREMENTAL")
     if full:
         state={"version":3,"papers":{},"authors":{},"last_run":""}
@@ -686,7 +744,7 @@ def main():
     incoming.extend(collect_authors(state, full))
     state["papers"]=merge_papers(state.get("papers",{}), incoming)
     state["last_run"]=NOW_ISO
-    state["version"]=3
+    state["version"]=4
     save_state(state)
 
     all_items=list(state["papers"].values())
