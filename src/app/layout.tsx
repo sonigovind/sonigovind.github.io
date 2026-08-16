@@ -1,29 +1,16 @@
 import type { Metadata } from 'next';
-import { Syne, Inter, JetBrains_Mono } from 'next/font/google';
+import type { CSSProperties } from 'react';
 import { ThemeProvider } from 'next-themes';
 import './globals.css';
 import { SITE_CONFIG } from '@/data';
 
-const syne = Syne({
-  subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
-  variable: '--font-syne',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-jetbrains',
-  display: 'swap',
-});
+// Use robust system font stacks so production builds never depend on
+// downloading Google Fonts at build time.
+const fontVariables = {
+  '--font-syne': '"Trebuchet MS", "Segoe UI", Arial, sans-serif',
+  '--font-inter': 'Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  '--font-jetbrains': 'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+} as CSSProperties;
 
 export const metadata: Metadata = {
   title: `${SITE_CONFIG.name} — PhD Researcher, Multimodal Code Generation & NLP | IIT Bombay`,
@@ -54,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${syne.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      style={fontVariables}
     >
       <body>
         <ThemeProvider
