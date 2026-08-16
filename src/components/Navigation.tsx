@@ -10,6 +10,7 @@ import { SITE_CONFIG } from '@/data';
 const NAV_LINKS = [
   { href: '#about', label: 'About' },
   { href: '#research', label: 'Research' },
+  { href: '#radar', label: 'Research Radar' },
   { href: '#publications', label: 'Publications' },
   { href: '#experience', label: 'Experience' },
   { href: '#contact', label: 'Contact' },
@@ -30,11 +31,7 @@ export default function Navigation() {
   useEffect(() => {
     const sections = document.querySelectorAll('section[id]');
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActiveSection(e.target.id);
-        });
-      },
+      (entries) => entries.forEach((e) => e.isIntersecting && setActiveSection(e.target.id)),
       { rootMargin: '-40% 0px -50% 0px' }
     );
     sections.forEach((s) => observer.observe(s));
@@ -74,7 +71,6 @@ export default function Navigation() {
         }}
       >
         <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
           <a
             href="#home"
             className="flex items-center gap-2.5 font-display font-semibold text-sm"
@@ -89,7 +85,6 @@ export default function Navigation() {
             <span>{SITE_CONFIG.name}</span>
           </a>
 
-          {/* Desktop Nav */}
           <ul className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map(({ href, label }) => {
               const sectionId = href.replace('#', '');
@@ -98,17 +93,8 @@ export default function Navigation() {
                 <li key={href}>
                   <a
                     href={href}
-                    className="relative px-4 py-2 rounded-lg text-sm transition-all duration-200"
-                    style={{
-                      color: isActive ? 'var(--accent)' : 'var(--text-2)',
-                      textDecoration: 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) (e.target as HTMLElement).style.color = 'var(--text)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) (e.target as HTMLElement).style.color = 'var(--text-2)';
-                    }}
+                    className="relative px-3 py-2 rounded-lg text-sm transition-all duration-200"
+                    style={{ color: isActive ? 'var(--accent)' : 'var(--text-2)', textDecoration: 'none' }}
                   >
                     {label}
                     {isActive && (
@@ -116,7 +102,6 @@ export default function Navigation() {
                         layoutId="nav-active"
                         className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full"
                         style={{ background: 'var(--accent)' }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                       />
                     )}
                   </a>
@@ -125,7 +110,6 @@ export default function Navigation() {
             })}
           </ul>
 
-          {/* Right Actions */}
           <div className="flex items-center gap-2">
             <motion.button
               onClick={openPalette}
@@ -151,22 +135,17 @@ export default function Navigation() {
               aria-label="Toggle mobile menu"
               aria-expanded={mobileOpen}
             >
-              {mobileOpen
-                ? <X className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                : <Menu className="w-4 h-4" style={{ color: 'var(--text-2)' }} />
-              }
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
         </nav>
 
-        {/* Mobile Menu */}
         <AnimatePresence>
           {mobileOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2, ease: 'easeInOut' }}
               className="md:hidden overflow-hidden"
               style={{ background: 'var(--bg-1)', borderBottom: '1px solid var(--border)' }}
             >
@@ -176,39 +155,18 @@ export default function Navigation() {
                     <a
                       href={href}
                       onClick={() => setMobileOpen(false)}
-                      className="block px-4 py-3 rounded-lg text-sm transition-colors"
+                      className="block px-4 py-3 rounded-lg text-sm"
                       style={{ color: 'var(--text-2)', textDecoration: 'none' }}
                     >
                       {label}
                     </a>
                   </li>
                 ))}
-                <li className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                  <button
-                    onClick={openPalette}
-                    className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm"
-                    style={{ color: 'var(--text-3)' }}
-                  >
-                    <Command className="w-4 h-4" />
-                    <span>Command palette</span>
-                    <kbd
-                      className="ml-auto text-xs px-2 py-0.5 rounded"
-                      style={{
-                        background: 'var(--bg-2)',
-                        border: '1px solid var(--border)',
-                        fontFamily: 'var(--font-jetbrains)',
-                      }}
-                    >
-                      ⌘K
-                    </kbd>
-                  </button>
-                </li>
               </ul>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
-
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </>
   );
