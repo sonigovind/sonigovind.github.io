@@ -46,7 +46,7 @@ jobs:
           OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
           CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
           RADAR_MODE: auto
-        run: python3 scripts/build_research_radar_v3.py
+        run: python3 scripts/build_research_radar.py
 
       - name: Save Research Radar state
         uses: actions/cache/save@v4
