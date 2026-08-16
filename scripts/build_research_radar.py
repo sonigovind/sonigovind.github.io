@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import csv
 import json
 import math
@@ -8,168 +9,74 @@ import re
 import time
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
-from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
 OUT = PUBLIC / "radar-data"
+STATE_DIR = ROOT / "data" / "research-radar"
+STATE_FILE = STATE_DIR / "state.json"
 OUT.mkdir(parents=True, exist_ok=True)
+STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 TODAY = datetime.now(timezone.utc).date()
 NOW_ISO = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 BACKFILL_FROM = "2020-01-01"
-BACKFILL_TO = f"{TODAY.year}-12-31"
-RECENT_DAYS = 21
-RECENT_CUTOFF = TODAY - timedelta(days=RECENT_DAYS)
+BACKFILL_TO = TODAY.isoformat()
+RECENT_DAYS = 28
+RECENT_FROM = (TODAY - timedelta(days=RECENT_DAYS)).isoformat()
+MODE = (os.environ.get("RADAR_MODE") or "auto").strip().lower()
+OPENALEX_API_KEY = (os.environ.get("OPENALEX_API_KEY") or "").strip()
+CONTACT_EMAIL = (os.environ.get("CONTACT_EMAIL") or "").strip()
 
-OPENALEX_API_KEY = os.environ.get("OPENALEX_API_KEY", "").strip()
-CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "").strip()
-
-AREA_CONFIG = {
+AREAS = {
     "Multimodal Code Generation": {
         "queries": [
-            "multimodal code generation",
-            "vision language model code generation",
-            "image to code generation",
-            "screenshot to code",
-            "UI to code",
-            "GUI code generation",
-            "flowchart to code",
-            "diagram to code",
-            "design to code",
-            "visual programming code generation",
-            "multimodal software engineering",
-        ],
-        "terms": [
-            "multimodal code", "vision language", "image to code", "screenshot to code",
-            "ui to code", "gui to code", "diagram to code", "flowchart to code",
-            "design to code", "visual code generation", "multimodal software",
-            "frontend code", "webpage generation", "screen to code",
+            "multimodal code generation", "vision language code generation", "image to code",
+            "screenshot to code", "UI to code", "flowchart to code", "diagram to code", "design to code",
         ],
     },
     "Agentic Software Engineering": {
         "queries": [
-            "coding agent",
-            "software engineering agent",
-            "autonomous software engineer",
-            "agentic software engineering",
-            "repository level coding agent",
-            "program repair agent",
-            "LLM software engineering agent",
-            "multi agent software development",
-            "SWE-bench agent",
-            "automated debugging agent",
-            "software testing agent",
-        ],
-        "terms": [
-            "coding agent", "software engineering agent", "autonomous software",
-            "agentic software", "repository agent", "program repair agent",
-            "multi-agent software", "multi agent software", "swe-bench",
-            "debugging agent", "testing agent", "software development agent",
-            "code agent", "llm agent",
+            "coding agent", "software engineering agent", "autonomous software engineer",
+            "repository coding agent", "SWE-bench agent", "program repair agent",
+            "debugging agent software", "testing agent software",
         ],
     },
     "Mechanistic Interpretability": {
         "queries": [
-            "mechanistic interpretability",
-            "transformer circuits",
-            "activation patching",
-            "causal tracing language model",
-            "sparse autoencoder interpretability",
-            "feature steering language model",
-            "representation probing language model",
-            "model editing causal tracing",
-            "mechanistic interpretability vision language model",
-            "mechanistic interpretability code model",
-            "dictionary learning language model interpretability",
-        ],
-        "terms": [
-            "mechanistic interpretability", "transformer circuit", "activation patch",
-            "causal tracing", "sparse autoencoder", "dictionary learning",
-            "feature steering", "representation probing", "linear probe",
-            "model editing", "causal intervention", "residual stream",
-            "attention head", "superposition", "feature visualization",
+            "mechanistic interpretability", "activation patching", "causal tracing language model",
+            "sparse autoencoder interpretability", "transformer circuits", "feature steering language model",
+            "dictionary learning interpretability", "representation probing language model",
         ],
     },
     "Explainable AI": {
         "queries": [
-            "explainable AI",
-            "interpretable machine learning",
-            "explanation faithfulness",
-            "counterfactual explanation",
-            "concept based explanation",
-            "feature attribution explainability",
-            "LLM explainability",
-            "vision language model explainability",
-            "SHAP explainability",
-            "TCAV explanation",
-            "explanation robustness machine learning",
-        ],
-        "terms": [
-            "explainable ai", "interpretable machine learning", "explanation faith",
-            "counterfactual explanation", "concept-based", "concept based",
-            "feature attribution", "shap", "lime", "tcav", "saliency",
-            "explanation robustness", "post-hoc explanation", "post hoc explanation",
-            "model explanation", "llm explainability", "language model explanation",
+            "explainable artificial intelligence", "interpretable machine learning", "explanation faithfulness",
+            "counterfactual explanation machine learning", "concept based explanation", "feature attribution",
+            "LLM explainability", "explanation robustness machine learning",
         ],
     },
 }
 
 WATCH_VENUES = {
-    "NeurIPS": "A*",
-    "ICML": "A*",
-    "ICLR": "A*",
-    "ACL": "A*",
-    "EMNLP": "A*",
-    "NAACL": "A",
-    "EACL": "A",
-    "TACL": "A*",
-    "CVPR": "A*",
-    "ICCV": "A*",
-    "ECCV": "A*",
-    "WACV": "A",
-    "ICSE": "A*",
-    "FSE": "A*",
-    "ASE": "A*",
-    "ISSTA": "A*",
-    "MSR": "A",
-    "ICSME": "A",
-    "SANER": "A",
-    "JMLR": "A*",
-    "TMLR": "A",
-    "AAAI": "A*",
-    "AISTATS": "A",
-    "COLM": "A",
-    "PLDI": "A*",
-    "OOPSLA": "A*",
-    "CHI": "A*",
-    "IJCAI": "A*",
-    "KDD": "A*",
-    "arXiv": "Preprint",
+    "NeurIPS": "A*", "ICML": "A*", "ICLR": "A*", "ACL": "A*", "EMNLP": "A*",
+    "NAACL": "A", "EACL": "A", "TACL": "A*", "CVPR": "A*", "ICCV": "A*",
+    "ECCV": "A*", "WACV": "A", "ICSE": "A*", "FSE": "A*", "ASE": "A*",
+    "ISSTA": "A*", "MSR": "A", "ICSME": "A", "SANER": "A", "JMLR": "A*",
+    "TMLR": "A", "AAAI": "A*", "AISTATS": "A", "COLM": "A", "PLDI": "A*",
+    "OOPSLA": "A*", "CHI": "A*", "IJCAI": "A*", "KDD": "A*", "arXiv": "Preprint",
 }
 
 WATCH_INSTITUTIONS = [
-    "Stanford University",
-    "Carnegie Mellon University",
-    "National University of Singapore",
-    "Nanyang Technological University",
-    "Queen's University",
-    "Tsinghua University",
-    "Fudan University",
-    "Beihang University",
-    "Google DeepMind",
-    "Anthropic",
-    "Princeton University",
-    "ETH Zurich",
-    "MIT",
-    "Harvard University",
-    "Duke University",
-    "University College London",
-    "Columbia University",
+    "Stanford University", "Carnegie Mellon University", "National University of Singapore",
+    "Nanyang Technological University", "Queen's University", "Tsinghua University", "Fudan University",
+    "Beihang University", "Google DeepMind", "Anthropic", "Princeton University", "ETH Zurich",
+    "Massachusetts Institute of Technology", "Harvard University", "Duke University",
+    "University College London", "Columbia University", "Northeastern University", "University of Stuttgart",
 ]
 
 WATCH_RESEARCHERS = {
@@ -178,8 +85,8 @@ WATCH_RESEARCHERS = {
     "Jian Yang": ("Beihang University", "Multimodal Code / Code LLM"),
     "Xingjun Ma": ("Fudan University", "Trustworthy ML / XAI"),
     "Yu-Gang Jiang": ("Fudan University", "Vision / Multimodal"),
-    "Chen Qian": ("Tsinghua / OpenBMB", "Multi-Agent Software Development"),
-    "Sirui Hong": ("MetaGPT / DeepWisdom", "Multi-Agent Software Development"),
+    "Chen Qian": ("Tsinghua University", "Multi-Agent Software Development"),
+    "Sirui Hong": ("DeepWisdom", "Multi-Agent Software Development"),
     "Graham Neubig": ("Carnegie Mellon University", "Coding Agents / LLM Systems"),
     "Nicholas Carlini": ("Anthropic", "Agentic Evaluation / AI Security"),
     "Albert Gu": ("Carnegie Mellon University", "Long Context / Sequence Models"),
@@ -190,13 +97,13 @@ WATCH_RESEARCHERS = {
     "Percy Liang": ("Stanford University", "Foundation Models / Evaluation"),
     "David Bau": ("Northeastern University", "Mechanistic Interpretability"),
     "Neel Nanda": ("Google DeepMind", "Mechanistic Interpretability"),
-    "Jacob Andreas": ("MIT", "Interpretability / Language Models"),
+    "Jacob Andreas": ("Massachusetts Institute of Technology", "Interpretability / Language Models"),
     "Been Kim": ("Google DeepMind", "Explainable AI / Interpretability"),
     "Cynthia Rudin": ("Duke University", "Interpretable ML"),
     "Finale Doshi-Velez": ("Harvard University", "Interpretability / Human-AI"),
     "Wenya Wang": ("Nanyang Technological University", "LLM Interpretability"),
-    "Clement Neo": ("Singapore AI Safety Institute / NTU", "Mechanistic Interpretability"),
-    "Zhengxuan Wu": ("Google DeepMind / Stanford", "Mechanistic Interpretability"),
+    "Clement Neo": ("Nanyang Technological University", "Mechanistic Interpretability"),
+    "Zhengxuan Wu": ("Stanford University", "Mechanistic Interpretability"),
     "Kenji Kawaguchi": ("National University of Singapore", "LLM / Deep Learning"),
     "Yuntong Zhang": ("National University of Singapore", "Coding Agents / Program Repair"),
     "Shyam Agarwal": ("Carnegie Mellon University", "Empirical AI Coding"),
@@ -205,14 +112,12 @@ WATCH_RESEARCHERS = {
     "Karthik Narasimhan": ("Princeton University", "Agentic AI / Coding Agents"),
     "Baishakhi Ray": ("Columbia University", "Code LLMs / Agentic SE"),
     "Michael Pradel": ("University of Stuttgart", "AI for Code / Reliability"),
-    "Mark Harman": ("Meta / University College London", "Automated SE / Agentic Testing"),
+    "Mark Harman": ("University College London", "Automated SE / Agentic Testing"),
     "Federica Sarro": ("University College London", "Automated / Empirical SE"),
-    "Peter O'Hearn": ("Meta / University College London", "Verification / Agentic SE"),
+    "Peter O'Hearn": ("University College London", "Verification / Agentic SE"),
     "Miltos Allamanis": ("Google DeepMind", "Machine Learning for Code"),
     "Ira Ceka": ("Columbia University", "Coding-Agent Failure Analysis"),
 }
-
-AUTHOR_HINTS = {name: aff for name, (aff, _) in WATCH_RESEARCHERS.items()}
 
 VENUE_PATTERNS = [
     (r"\barxiv\b", "arXiv"),
@@ -247,78 +152,61 @@ VENUE_PATTERNS = [
     (r"knowledge discovery and data mining|\bkdd\b", "KDD"),
 ]
 
-METHOD_TERMS = [
-    ("multi-agent", ["multi-agent", "multi agent"]),
-    ("agent planning", ["planning", "planner"]),
-    ("tool use", ["tool use", "tools", "terminal", "browser"]),
-    ("retrieval", ["retrieval", "rag"]),
-    ("program repair", ["program repair", "bug repair", "patch generation"]),
-    ("execution feedback", ["execution feedback", "unit test", "test feedback", "compiler feedback"]),
-    ("probing", ["probe", "probing", "linear classifier"]),
-    ("activation patching", ["activation patch", "path patch"]),
-    ("causal tracing", ["causal tracing"]),
-    ("sparse autoencoder", ["sparse autoencoder", "sae"]),
-    ("dictionary learning", ["dictionary learning"]),
-    ("steering", ["steering", "activation steering"]),
-    ("model editing", ["model editing", "knowledge editing"]),
-    ("counterfactual", ["counterfactual"]),
-    ("feature attribution", ["shap", "lime", "feature attribution", "saliency"]),
+# Strict domain gates. Broad words like "code", "attention", "interpretation", or "model"
+# are intentionally insufficient on their own.
+MM_VISUAL = re.compile(r"\b(multimodal|vision[- ]language|vlm|screenshot|screen[- ]to[- ]code|ui[- ]to[- ]code|gui[- ]to[- ]code|image[- ]to[- ]code|flowchart|uml|diagram[- ]to[- ]code|design[- ]to[- ]code|webpage screenshot|visual programming)\b", re.I)
+MM_CODEGEN = re.compile(r"\b(code generation|generate(?:s|d|ing)? code|program synthesis|source code generation|frontend generation|html\s*/?\s*css|implementation generation|to code|code from|program from)\b", re.I)
+AG_AGENT = re.compile(r"\b(coding agent|software engineering agent|software agent|swe-agent|swe bench|swe-bench|agentic software|autonomous software engineer|repository[- ]level agent|program repair agent|debugging agent|testing agent|llm agent)\b", re.I)
+AG_SE = re.compile(r"\b(repository|github issue|bug fix|bug fixing|debugging|program repair|software test|unit test|code review|codebase|source code|software engineering|patch generation|issue resolution|developer task)\b", re.I)
+MI_METHOD = re.compile(r"\b(mechanistic interpretability|activation patch(?:ing)?|path patch(?:ing)?|causal tracing|sparse autoencoder|sae features?|transformer circuits?|dictionary learning|superposition|feature steering|activation steering|residual stream|causal scrubbing|representation probing|linear probing)\b", re.I)
+MI_MODEL = re.compile(r"\b(language model|llm|transformer|vision[- ]language|vlm|neural network|deep network|foundation model|code model|multimodal model)\b", re.I)
+XAI_METHOD = re.compile(r"\b(explainable ai|explainable artificial intelligence|interpretable machine learning|model explanation|explanation faithfulness|counterfactual explanation|feature attribution|shap|lime|tcav|concept[- ]based|concept bottleneck|saliency map|rationale faithfulness|post[- ]hoc explanation|inherently interpretable)\b", re.I)
+XAI_MODEL = re.compile(r"\b(machine learning|neural network|deep learning|classifier|language model|llm|transformer|vision model|foundation model|artificial intelligence|ai system)\b", re.I)
+ADJACENT_WATCH = re.compile(r"\b(code model|program analysis|program repair|software testing|long context|sequence model|foundation model evaluation|agent evaluation|model robustness|ai safety|reasoning|tool use)\b", re.I)
+
+METHODS = [
+    ("multi-agent", ["multi-agent", "multi agent"]), ("planning", ["planning", "planner"]),
+    ("tool use", ["tool use", "terminal", "browser tool"]), ("program repair", ["program repair", "bug repair", "patch generation"]),
+    ("execution feedback", ["execution feedback", "unit test", "compiler feedback"]), ("probing", ["probe", "probing", "linear classifier"]),
+    ("activation patching", ["activation patch", "path patch"]), ("causal tracing", ["causal tracing"]),
+    ("sparse autoencoder", ["sparse autoencoder", "sae"]), ("dictionary learning", ["dictionary learning"]),
+    ("steering", ["steering", "activation steering"]), ("model editing", ["model editing", "knowledge editing"]),
+    ("counterfactual", ["counterfactual"]), ("feature attribution", ["shap", "lime", "feature attribution"]),
     ("concept-based", ["tcav", "concept-based", "concept based"]),
 ]
+DATASETS = ["SWE-bench", "SWE-bench Verified", "HumanEval", "MBPP", "APPS", "RepoBench", "WebArena", "GAIA", "OSWorld", "AndroidWorld", "Design2Code", "WebSight", "ChartQA", "ImageNet", "COCO", "VQA"]
+MODELS = ["GPT-4", "GPT-4o", "Claude", "Gemini", "Llama", "Qwen", "Mistral", "Gemma", "DeepSeek", "Codex", "CodeLlama", "StarCoder", "CodeT5", "CLIP", "ViT", "Mamba"]
 
-DATASET_TERMS = [
-    "SWE-bench", "SWE-bench Verified", "HumanEval", "MBPP", "APPS", "CodeContests",
-    "RepoBench", "SWE-agent", "AgentBench", "WebArena", "GAIA", "MMLU",
-    "ImageNet", "COCO", "VQA", "ChartQA", "Design2Code", "WebSight",
-    "Screen2Words", "Mind2Web", "AndroidWorld", "OSWorld",
-]
 
-MODEL_TERMS = [
-    "GPT-4", "GPT-4o", "GPT-5", "Claude", "Gemini", "Llama", "Qwen", "Mistral",
-    "Gemma", "DeepSeek", "Codex", "CodeLlama", "StarCoder", "CodeT5",
-    "BERT", "T5", "CLIP", "ViT", "Mamba",
-]
-
-METRIC_PATTERNS = [
-    r"pass@k", r"pass@1", r"accuracy", r"f1", r"bleu", r"rouge", r"success rate",
-    r"exact match", r"human evaluation", r"faithfulness", r"robustness",
-]
-
-def norm_text(s: str) -> str:
+def norm(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").replace("\n", " ").replace("\r", " ")).strip()
 
-def norm_key(s: str) -> str:
+
+def keytext(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
 
-def contains_any(text: str, terms: Iterable[str]) -> bool:
-    t = text.lower()
-    return any(term.lower() in t for term in terms)
 
-def reconstruct_abstract(inv: dict[str, list[int]] | None) -> str:
+def abstract_from(inv: dict[str, list[int]] | None) -> str:
     if not inv:
         return ""
-    max_pos = -1
-    for positions in inv.values():
-        if positions:
-            max_pos = max(max_pos, max(positions))
-    if max_pos < 0:
+    maxp = max((max(v) for v in inv.values() if v), default=-1)
+    if maxp < 0:
         return ""
-    tokens = [""] * (max_pos + 1)
+    toks = [""] * (maxp + 1)
     for tok, positions in inv.items():
         for p in positions:
-            if 0 <= p < len(tokens):
-                tokens[p] = tok
-    return norm_text(" ".join(tokens))
+            if 0 <= p < len(toks):
+                toks[p] = tok
+    return norm(" ".join(toks))
 
-def first_sentence(text: str, limit: int = 320) -> str:
-    text = norm_text(text)
+
+def first_sent(text: str, limit: int = 320) -> str:
+    text = norm(text)
     if not text:
         return ""
-    parts = re.split(r"(?<=[.!?])\s+", text)
-    s = parts[0] if parts else text
-    if len(s) > limit:
-        s = s[: limit - 1].rstrip() + "…"
-    return s
+    s = re.split(r"(?<=[.!?])\s+", text)[0]
+    return s if len(s) <= limit else s[: limit - 1].rstrip() + "…"
+
 
 def api_url(endpoint: str, params: dict[str, Any]) -> str:
     p = dict(params)
@@ -326,858 +214,513 @@ def api_url(endpoint: str, params: dict[str, Any]) -> str:
         p["api_key"] = OPENALEX_API_KEY
     if CONTACT_EMAIL:
         p["mailto"] = CONTACT_EMAIL
-    return f"https://api.openalex.org/{endpoint}?{urllib.parse.urlencode(p)}"
+    return "https://api.openalex.org/" + endpoint + "?" + urllib.parse.urlencode(p)
+
 
 def get_json(url: str, retries: int = 4) -> dict[str, Any]:
-    headers = {"User-Agent": "govind-research-radar/2.0"}
     last = None
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=60) as r:
+            req = urllib.request.Request(url, headers={"User-Agent": "govind-research-radar/3.0"})
+            with urllib.request.urlopen(req, timeout=45) as r:
                 return json.load(r)
         except Exception as e:
             last = e
             time.sleep(min(2 ** attempt, 8))
-    raise RuntimeError(f"request failed after {retries} attempts: {url}: {last}")
+    raise RuntimeError(f"request failed: {last}")
 
-def openalex_search(query: str, recent: bool = False, pages: int = 2) -> list[dict[str, Any]]:
-    date_filter = (
-        f"from_publication_date:{max(BACKFILL_FROM, RECENT_CUTOFF.isoformat())},to_publication_date:{BACKFILL_TO}"
-        if recent
-        else f"from_publication_date:{BACKFILL_FROM},to_publication_date:{BACKFILL_TO}"
-    )
+
+def search_works(query: str, date_from: str, pages: int) -> list[dict[str, Any]]:
     cursor = "*"
     out: list[dict[str, Any]] = []
     for _ in range(pages):
         params = {
             "search": query,
-            "filter": date_filter,
-            "per_page": 100,
-            "cursor": cursor,
-        }
-        if recent:
-            params["sort"] = "publication_date:desc"
-        data = get_json(api_url("works", params))
-        out.extend(data.get("results", []))
-        nxt = (data.get("meta") or {}).get("next_cursor")
-        if not nxt or not data.get("results"):
-            break
-        cursor = nxt
-    return out
-
-def openalex_resolve_author(name: str, hint: str = "") -> dict[str, Any] | None:
-    data = get_json(api_url("authors", {"search": name, "per-page": 8}))
-    candidates = data.get("results", [])
-    if not candidates:
-        return None
-    nk = norm_key(name)
-
-    def score(a: dict[str, Any]) -> tuple[int, int, int]:
-        display = norm_key(a.get("display_name", ""))
-        exact = int(display == nk)
-        hint_hit = 0
-        if hint:
-            inst = ((a.get("last_known_institutions") or [{}])[0] or {}).get("display_name", "")
-            hint_hit = int(any(x in norm_key(inst) for x in norm_key(hint).split() if len(x) > 4))
-        works = int(a.get("works_count") or 0)
-        return (exact, hint_hit, works)
-    return max(candidates, key=score)
-
-def openalex_author_works(author_id: str, pages: int = 2) -> list[dict[str, Any]]:
-    cursor = "*"
-    out: list[dict[str, Any]] = []
-    aid = author_id.rsplit("/", 1)[-1]
-    for _ in range(pages):
-        params = {
-            "filter": f"authorships.author.id:{aid},from_publication_date:{BACKFILL_FROM},to_publication_date:{BACKFILL_TO}",
+            "filter": f"from_publication_date:{date_from},to_publication_date:{BACKFILL_TO}",
             "per_page": 100,
             "cursor": cursor,
             "sort": "publication_date:desc",
         }
-        data = get_json(api_url("works", params))
-        out.extend(data.get("results", []))
-        nxt = (data.get("meta") or {}).get("next_cursor")
-        if not nxt or not data.get("results"):
+        d = get_json(api_url("works", params))
+        rows = d.get("results", [])
+        out.extend(rows)
+        cursor = (d.get("meta") or {}).get("next_cursor")
+        if not rows or not cursor:
             break
-        cursor = nxt
     return out
 
-def normalize_venue(source: str) -> str:
-    s = norm_text(source)
-    low = s.lower()
-    for pattern, venue in VENUE_PATTERNS:
-        if re.search(pattern, low, flags=re.I):
+
+def resolve_author(name: str, hint: str) -> dict[str, Any] | None:
+    d = get_json(api_url("authors", {"search": name, "per-page": 8}))
+    cand = d.get("results", [])
+    if not cand:
+        return None
+    nk = keytext(name)
+    hint_words = [x for x in keytext(hint).split() if len(x) > 4]
+    def score(a: dict[str, Any]):
+        exact = int(keytext(a.get("display_name", "")) == nk)
+        insts = " ".join(keytext(x.get("display_name", "")) for x in (a.get("last_known_institutions") or []))
+        hint_hit = sum(int(w in insts) for w in hint_words)
+        return (exact, hint_hit, int(a.get("cited_by_count") or 0), int(a.get("works_count") or 0))
+    return max(cand, key=score)
+
+
+def author_works(author_id: str, date_from: str, pages: int = 1) -> list[dict[str, Any]]:
+    aid = author_id.rsplit("/", 1)[-1]
+    cursor = "*"
+    out = []
+    for _ in range(pages):
+        params = {
+            "filter": f"authorships.author.id:{aid},from_publication_date:{date_from},to_publication_date:{BACKFILL_TO}",
+            "per_page": 100,
+            "cursor": cursor,
+            "sort": "publication_date:desc",
+        }
+        d = get_json(api_url("works", params))
+        rows = d.get("results", [])
+        out.extend(rows)
+        cursor = (d.get("meta") or {}).get("next_cursor")
+        if not rows or not cursor:
+            break
+    return out
+
+
+def normalize_venue(s: str) -> str:
+    s = norm(s)
+    for pat, venue in VENUE_PATTERNS:
+        if re.search(pat, s, re.I):
             return venue
     return s or "Unknown"
 
-def venue_tier(venue: str) -> str:
-    return WATCH_VENUES.get(venue, "")
 
-def classify_areas(text: str) -> tuple[str, list[str], dict[str, int]]:
-    low = text.lower()
+def classify(text: str) -> tuple[str, list[str], int]:
     scores: dict[str, int] = {}
-    for area, cfg in AREA_CONFIG.items():
-        score = 0
-        for term in cfg["terms"]:
-            if term in low:
-                score += 2 if " " in term else 1
-        scores[area] = score
-    ranked = sorted(scores, key=lambda a: scores[a], reverse=True)
-    primary = ranked[0] if ranked and scores[ranked[0]] > 0 else ""
-    related = [a for a in ranked[1:] if scores[a] > 0]
-    return primary, related, scores
+    # Strict conjunctions prevent domain leakage.
+    if MM_VISUAL.search(text) and MM_CODEGEN.search(text):
+        scores["Multimodal Code Generation"] = 5 + len(MM_VISUAL.findall(text)) + len(MM_CODEGEN.findall(text))
+    if AG_AGENT.search(text) and AG_SE.search(text):
+        scores["Agentic Software Engineering"] = 5 + len(AG_AGENT.findall(text)) + len(AG_SE.findall(text))
+    if MI_METHOD.search(text) and MI_MODEL.search(text):
+        scores["Mechanistic Interpretability"] = 6 + len(MI_METHOD.findall(text))
+    if XAI_METHOD.search(text) and XAI_MODEL.search(text):
+        scores["Explainable AI"] = 5 + len(XAI_METHOD.findall(text))
+    if not scores:
+        return "", [], 0
+    # MI wins ties over XAI because it is the more specific scientific category.
+    order = {"Mechanistic Interpretability": 4, "Agentic Software Engineering": 3, "Multimodal Code Generation": 2, "Explainable AI": 1}
+    ranked = sorted(scores, key=lambda a: (scores[a], order[a]), reverse=True)
+    return ranked[0], ranked[1:], scores[ranked[0]]
 
-def area_gate(area: str, text: str) -> bool:
+
+def infer_list(text: str, pairs) -> str:
     low = text.lower()
-    if area == "Multimodal Code Generation":
-        visual = any(x in low for x in ["multimodal", "vision", "image", "screenshot", "ui ", "gui", "diagram", "flowchart", "visual", "design"])
-        code = any(x in low for x in ["code", "program", "software", "frontend", "webpage", "website"])
-        return visual and code
-    if area == "Agentic Software Engineering":
-        agent = any(x in low for x in ["agent", "agentic", "autonomous"])
-        se = any(x in low for x in ["code", "software", "program", "repository", "bug", "debug", "test", "developer", "github"])
-        return agent and se
-    if area == "Mechanistic Interpretability":
-        return any(x in low for x in [
-            "mechanistic interpret", "activation patch", "causal tracing", "sparse autoencoder",
-            "transformer circuit", "dictionary learning", "residual stream", "feature steering",
-            "superposition", "linear probe", "representation probing"
-        ])
-    if area == "Explainable AI":
-        explain = any(x in low for x in [
-            "explainable", "interpretability", "interpretable", "explanation", "counterfactual",
-            "feature attribution", "shap", "lime", "tcav", "saliency"
-        ])
-        ai = any(x in low for x in [
-            "machine learning", "neural", "model", "llm", "language model", "vision", "classifier",
-            "artificial intelligence", "transformer"
-        ])
-        return explain and ai
-    return False
+    return "; ".join(dict.fromkeys(label for label, terms in pairs if any(t in low for t in terms)))
 
-def infer_paper_type(text: str) -> str:
+
+def infer_method(text: str) -> str:
+    return infer_list(text, METHODS)
+
+
+def infer_models(text: str) -> str:
+    low = text.lower()
+    return "; ".join(dict.fromkeys(x for x in MODELS if x.lower() in low))
+
+
+def infer_datasets(text: str) -> str:
+    low = text.lower()
+    return "; ".join(dict.fromkeys(x for x in DATASETS if x.lower() in low))
+
+
+def infer_metrics(text: str) -> str:
+    low = text.lower()
+    labels = []
+    for k, label in [("pass@", "pass@k"), ("accuracy", "Accuracy"), ("f1", "F1"), ("success rate", "Success rate"), ("exact match", "Exact match"), ("human evaluation", "Human evaluation"), ("faithfulness", "Faithfulness"), ("robustness", "Robustness")]:
+        if k in low:
+            labels.append(label)
+    return "; ".join(dict.fromkeys(labels))
+
+
+def infer_failure(text: str) -> str:
+    low = text.lower()
+    labels = []
+    for k, label in [("hallucination", "Hallucination"), ("failure", "Failure analysis"), ("error", "Errors"), ("robust", "Robustness"), ("security", "Security"), ("vulnerab", "Vulnerabilities"), ("bias", "Bias"), ("unfaith", "Unfaithful explanation")]:
+        if k in low:
+            labels.append(label)
+    return "; ".join(dict.fromkeys(labels[:4]))
+
+
+def paper_type(text: str) -> str:
     low = text.lower()
     if "survey" in low or "systematic review" in low or "literature review" in low:
         return "Survey / Review"
     if "benchmark" in low or "dataset" in low:
         return "Benchmark / Dataset"
-    if any(x in low for x in ["evaluation", "empirical study", "measurement study", "analysis of"]):
+    if "evaluation" in low or "empirical study" in low or "analysis" in low:
         return "Evaluation / Analysis"
-    if any(x in low for x in ["framework", "system", "agent", "method", "approach", "model"]):
-        return "Method / System"
-    return "Research Paper"
+    return "Method / System" if any(x in low for x in ["framework", "system", "method", "approach", "agent"]) else "Research Paper"
 
-def infer_methods(text: str) -> str:
-    low = text.lower()
-    hits = [name for name, terms in METHOD_TERMS if any(t in low for t in terms)]
-    return "; ".join(hits[:6])
 
-def infer_models(text: str) -> str:
-    hits = [m for m in MODEL_TERMS if m.lower() in text.lower()]
-    return "; ".join(dict.fromkeys(hits))
-
-def infer_datasets(text: str) -> str:
-    hits = [d for d in DATASET_TERMS if d.lower() in text.lower()]
-    return "; ".join(dict.fromkeys(hits))
-
-def infer_metrics(text: str) -> str:
-    low = text.lower()
-    hits = []
-    for p in METRIC_PATTERNS:
-        if re.search(p, low):
-            hits.append(p.replace("\\b", ""))
-    return "; ".join(dict.fromkeys(hits))
-
-def infer_failure(text: str) -> str:
-    low = text.lower()
-    terms = [
-        ("hallucination", "Hallucination"),
-        ("failure", "Failure analysis"),
-        ("error", "Errors"),
-        ("robust", "Robustness"),
-        ("security", "Security"),
-        ("vulnerab", "Vulnerabilities"),
-        ("misalign", "Misalignment"),
-        ("bias", "Bias"),
-        ("incorrect", "Incorrect behavior"),
-        ("unfaith", "Unfaithful explanation"),
-    ]
-    hits = [label for key, label in terms if key in low]
-    return "; ".join(hits[:4])
-
-def yes_signal(text: str, terms: list[str], positive: str = "Yes") -> str:
-    low = text.lower()
-    return positive if any(t in low for t in terms) else ""
-
-def infer_task(area: str, text: str) -> str:
+def task_for(area: str, text: str) -> str:
     low = text.lower()
     if area == "Multimodal Code Generation":
-        for key, label in [
-            ("flowchart", "Flowchart → code"),
-            ("screenshot", "Screenshot → code"),
-            ("ui ", "UI / design → code"),
-            ("gui", "GUI → code"),
-            ("diagram", "Diagram → code"),
-            ("image", "Image → code"),
-        ]:
-            if key in low:
-                return label
-        return "Multimodal code generation / program synthesis"
+        for k, v in [("flowchart", "Flowchart → code"), ("screenshot", "Screenshot → code"), ("ui", "UI / design → code"), ("diagram", "Diagram → code"), ("image", "Image → code")]:
+            if k in low: return v
+        return "Visual / multimodal → code"
     if area == "Agentic Software Engineering":
-        for key, label in [
-            ("program repair", "Program repair"),
-            ("bug fix", "Bug fixing"),
-            ("debug", "Debugging"),
-            ("test", "Testing"),
-            ("repository", "Repository-level software task"),
-            ("github issue", "GitHub issue resolution"),
-            ("code review", "Code review"),
-        ]:
-            if key in low:
-                return label
+        for k, v in [("program repair", "Program repair"), ("bug", "Bug fixing / debugging"), ("test", "Testing"), ("repository", "Repository-level task"), ("code review", "Code review")]:
+            if k in low: return v
         return "Autonomous software engineering"
     if area == "Mechanistic Interpretability":
-        return "Understand / localize internal model computation"
+        return "Internal representation / mechanism analysis"
     if area == "Explainable AI":
-        return "Explain or interpret model predictions / behavior"
+        return "Model explanation / interpretability"
     return ""
 
-def infer_agent_capability(text: str) -> str:
-    low = text.lower()
-    labels = []
-    for key, label in [
-        ("planning", "Planning"),
-        ("tool", "Tool use"),
-        ("repository", "Repository navigation"),
-        ("debug", "Debugging"),
-        ("repair", "Program repair"),
-        ("test", "Testing"),
-        ("multi-agent", "Multi-agent collaboration"),
-        ("multi agent", "Multi-agent collaboration"),
-        ("memory", "Memory"),
-        ("code review", "Code review"),
-    ]:
-        if key in low:
-            labels.append(label)
-    return "; ".join(dict.fromkeys(labels)) or "Coding / software agent"
 
-def infer_environment(text: str) -> str:
+def gap_signal(area: str, text: str) -> str:
     low = text.lower()
-    labels = []
-    for key, label in [
-        ("repository", "Repository"),
-        ("github", "GitHub"),
-        ("terminal", "Terminal"),
-        ("ide", "IDE"),
-        ("browser", "Browser"),
-        ("web", "Web environment"),
-    ]:
-        if key in low:
-            labels.append(label)
-    return "; ".join(dict.fromkeys(labels))
-
-def infer_feedback(text: str) -> str:
-    low = text.lower()
-    labels = []
-    for key, label in [
-        ("unit test", "Unit tests"),
-        ("test feedback", "Test feedback"),
-        ("execution", "Execution feedback"),
-        ("compiler", "Compiler feedback"),
-        ("human feedback", "Human feedback"),
-        ("reward", "Reward / evaluator"),
-    ]:
-        if key in low:
-            labels.append(label)
-    return "; ".join(dict.fromkeys(labels))
-
-def infer_target_component(text: str) -> str:
-    low = text.lower()
-    labels = []
-    for key, label in [
-        ("attention head", "Attention heads"),
-        ("mlp", "MLP"),
-        ("residual stream", "Residual stream"),
-        ("neuron", "Neurons"),
-        ("sparse autoencoder", "SAE features"),
-        ("feature", "Features"),
-        ("activation", "Activations"),
-        ("circuit", "Circuits"),
-        ("layer", "Layers"),
-    ]:
-        if key in low:
-            labels.append(label)
-    return "; ".join(dict.fromkeys(labels))
-
-def infer_explanation_type(text: str) -> str:
-    low = text.lower()
-    for terms, label in [
-        (["counterfactual"], "Counterfactual"),
-        (["tcav", "concept-based", "concept based"], "Concept-based"),
-        (["shap", "lime", "feature attribution"], "Feature attribution"),
-        (["saliency", "gradient"], "Saliency / gradient"),
-        (["example-based", "example based"], "Example-based"),
-    ]:
-        if any(t in low for t in terms):
-            return label
-    return "Model explanation / interpretability"
-
-def infer_modality(text: str) -> str:
-    low = text.lower()
-    labels = []
-    if any(x in low for x in ["vision", "image", "multimodal", "vlm"]):
-        labels.append("Vision / Multimodal")
-    if any(x in low for x in ["language model", "llm", "transformer", "text"]):
-        labels.append("Language / LLM")
-    if any(x in low for x in ["code", "program", "software"]):
-        labels.append("Code")
-    return "; ".join(labels) or "ML model"
-
-def infer_limitation(area: str, text: str) -> str:
-    low = text.lower()
+    if area == "Multimodal Code Generation" and not any(x in low for x in ["grounding", "structure", "topology", "control flow", "counterfactual"]):
+        return "Generation studied; explicit visual-structural grounding evidence is not obvious."
+    if area == "Agentic Software Engineering" and not any(x in low for x in ["failure", "root cause", "error analysis", "mechanism", "counterfactual"]):
+        return "Capability/performance studied; failure mechanism is not explicit."
     if area == "Mechanistic Interpretability":
+        probe = any(x in low for x in ["probe", "probing", "linear classifier"])
         causal = any(x in low for x in ["causal", "intervention", "patching", "steering", "ablation"])
-        probe = any(x in low for x in ["probe", "probing", "classifier"])
         if probe and not causal:
-            return "Gap signal: representation is probed, but causal use is not explicit in title/abstract."
-    if area == "Agentic Software Engineering":
-        failure = any(x in low for x in ["failure", "error", "why", "root cause", "mechanism"])
-        if not failure:
-            return "Gap signal: agent capability/performance is studied; failure mechanism is not explicit in title/abstract."
-    if area == "Multimodal Code Generation":
-        grounding = any(x in low for x in ["grounding", "structure", "topology", "edge", "relation", "counterfactual"])
-        if not grounding:
-            return "Gap signal: generation is studied; explicit visual-structural grounding evidence is not obvious."
-    if area == "Explainable AI":
-        faithful = any(x in low for x in ["faithful", "faithfulness", "causal", "human evaluation", "robust"])
-        if not faithful:
-            return "Gap signal: explanation method is present; faithfulness/robustness evidence is not explicit."
+            return "Representation evidence present; causal use is not explicit."
+    if area == "Explainable AI" and not any(x in low for x in ["faithful", "faithfulness", "causal", "human evaluation", "robust"]):
+        return "Explanation method present; faithfulness/robustness evidence is not explicit."
     return ""
 
-def why_matters(area: str, flags: list[str], limitation: str) -> str:
-    base = {
-        "Multimodal Code Generation": "Relevant to visual grounding, structure-aware code generation, or multimodal SE.",
-        "Agentic Software Engineering": "Relevant to coding-agent capability, reliability, failure analysis, or intervention.",
-        "Mechanistic Interpretability": "Relevant to representation → causal use → intervention analysis in LLM/VLM/code models.",
-        "Explainable AI": "Relevant to explanation faithfulness, robustness, concepts, or human-facing interpretability.",
-        "Adjacent / Watch": "Watched-author paper; review for possible transfer to your tracked research directions.",
-    }.get(area, "Relevant to tracked research.")
-    if "watched researcher" in " ".join(flags):
-        base += " Watched-author signal."
-    if limitation:
-        base += " " + limitation
-    return base
 
-def priority_label(score: int) -> str:
-    if score >= 85:
-        return "A — Must Read"
-    if score >= 70:
-        return "B — High"
-    return "C — Monitor"
-
-def work_to_item(w: dict[str, Any], source_override: str = "") -> dict[str, Any] | None:
-    title = norm_text(w.get("title", ""))
+def build_item(w: dict[str, Any], forced_watch: str = "") -> dict[str, Any] | None:
+    title = norm(w.get("title", ""))
     if not title:
         return None
-    abstract = reconstruct_abstract(w.get("abstract_inverted_index"))
-    text = norm_text(f"{title}. {abstract}")
-    primary, related, scores = classify_areas(text)
+    abstract = abstract_from(w.get("abstract_inverted_index"))
+    text = norm(title + ". " + abstract)
+    area, related, rel_score = classify(text)
+    authors, insts = [], []
+    for a in (w.get("authorships") or []):
+        n = norm(((a.get("author") or {}).get("display_name") or ""))
+        if n and n not in authors: authors.append(n)
+        for inst in (a.get("institutions") or []):
+            s = norm(inst.get("display_name", ""))
+            if s and s not in insts: insts.append(s)
+    watched = [a for a in authors if any(keytext(a) == keytext(r) for r in WATCH_RESEARCHERS)]
+    if forced_watch and forced_watch not in watched:
+        watched.append(forced_watch)
+    priority_insts = [i for i in insts if any(keytext(p) in keytext(i) or keytext(i) in keytext(p) for p in WATCH_INSTITUTIONS)]
+    source = norm((((w.get("primary_location") or {}).get("source") or {}).get("display_name") or ""))
+    venue = normalize_venue(source)
+    tier = WATCH_VENUES.get(venue, "")
+    pub = w.get("publication_date") or ""
+    doi = (w.get("doi") or "").lower().replace("https://doi.org/", "").strip()
+    url = (w.get("primary_location") or {}).get("landing_page_url") or ("https://doi.org/" + doi if doi else w.get("id", ""))
 
-    # If classifier weak, try query-oriented gates.
-    if primary and not area_gate(primary, text):
-        candidates = [a for a in AREA_CONFIG if area_gate(a, text)]
-        primary = candidates[0] if candidates else ""
-        related = [a for a in candidates[1:]]
+    # Author-watch papers may be retained as adjacent only in the author view.
+    adjacent = False
+    if not area and watched and ADJACENT_WATCH.search(text):
+        area = "Adjacent / Watch"
+        adjacent = True
+    if not area:
+        return None
 
-    authorships = w.get("authorships") or []
-    authors = []
-    institutions = []
-    for a in authorships:
-        name = norm_text(((a.get("author") or {}).get("display_name") or ""))
-        if name and name not in authors:
-            authors.append(name)
-        for inst in a.get("institutions") or []:
-            n = norm_text(inst.get("display_name", ""))
-            if n and n not in institutions:
-                institutions.append(n)
-
-    source_raw = norm_text((((w.get("primary_location") or {}).get("source") or {}).get("display_name") or ""))
-    venue = normalize_venue(source_raw)
-    watched_authors = [a for a in authors if any(norm_key(a) == norm_key(r) for r in WATCH_RESEARCHERS)]
-    priority_insts = [i for i in institutions if any(norm_key(p) in norm_key(i) or norm_key(i) in norm_key(p) for p in WATCH_INSTITUTIONS)]
-    score = 45
-    if primary:
-        score += min(20, scores.get(primary, 0) * 4)
+    score = 48 + min(24, rel_score * 3)
     flags = []
-    if venue in WATCH_VENUES:
-        score += 10
-        flags.append(f"priority venue: {venue}")
-    if priority_insts:
-        score += 8
-        flags.append("priority institution")
-    if watched_authors:
-        score += 12
-        flags.append("watched researcher: " + ", ".join(watched_authors[:2]))
-
-    evidence_terms = ["counterfactual", "causal", "intervention", "failure", "benchmark", "evaluation", "faithful", "mechanism", "ablation", "patching"]
-    evidence_hits = sum(1 for t in evidence_terms if t in text.lower())
-    score += min(8, evidence_hits * 2)
-    if evidence_hits:
-        flags.append("strong evidence/method signal")
-
+    if tier and venue != "arXiv": score += 12; flags.append(f"priority venue: {venue}")
+    elif venue == "arXiv": score += 2
+    if priority_insts: score += 8; flags.append("priority institution")
+    if watched: score += 12; flags.append("watched researcher: " + ", ".join(watched[:2]))
+    evidence = sum(1 for x in ["counterfactual", "causal", "intervention", "failure", "benchmark", "faithfulness", "ablation", "patching", "steering"] if x in text.lower())
+    if evidence: score += min(8, evidence * 2); flags.append("strong evidence/method signal")
     citations = int(w.get("cited_by_count") or 0)
-    if citations:
-        score += min(8, int(math.log10(citations + 1) * 4))
-    score = min(score, 100)
+    if citations: score += min(6, int(math.log10(citations + 1) * 3))
+    score = min(100, score)
 
-    pub_date = w.get("publication_date") or ""
-    doi = w.get("doi") or ""
-    loc = w.get("primary_location") or {}
-    url = loc.get("landing_page_url") or doi or w.get("id") or ""
-    paper_type = infer_paper_type(text)
-    method = infer_methods(text)
-    model = infer_models(text)
-    dataset = infer_datasets(text)
-    metric = infer_metrics(text)
-    failure = infer_failure(text)
-    counterfactual = yes_signal(text, ["counterfactual"])
-    mechanism = ""
-    if any(x in text.lower() for x in ["causal tracing", "activation patch", "ablation", "intervention", "circuit", "mechanistic"]):
-        mechanism = "Yes / causal-mechanistic signal"
-    elif any(x in text.lower() for x in ["probe", "probing", "representation"]):
-        mechanism = "Probe / representation evidence"
-    causal = yes_signal(text, ["causal", "intervention", "activation patch", "steering", "ablation", "model editing"])
-    main_claim = first_sentence(abstract) or first_sentence(title)
-    limitation = infer_limitation(primary, text) if primary else ""
-    item = {
-        "id": (w.get("id") or "").rsplit("/", 1)[-1],
-        "year": int(w.get("publication_year") or (pub_date[:4] if pub_date else 0) or 0),
-        "published": pub_date,
-        "primary_area": primary,
-        "related_areas": related,
-        "title": title,
-        "authors": authors,
-        "watched_authors": watched_authors,
-        "institutions": institutions,
-        "priority_institutions": priority_insts,
-        "venue": venue,
-        "venue_tier": venue_tier(venue),
-        "paper_type": paper_type,
-        "task": infer_task(primary, text) if primary else "",
-        "method": method,
-        "model": model,
-        "dataset": dataset,
-        "metric": metric,
-        "failure": failure,
-        "counterfactual": counterfactual,
-        "mechanism": mechanism,
-        "causal": causal,
-        "main_claim": main_claim,
-        "limitation": limitation,
-        "why": why_matters(primary or "Adjacent / Watch", flags, limitation),
-        "score": score,
-        "citations": citations,
-        "doi": doi,
-        "url": url,
-        "code_data": "",
-        "source": source_override or "OpenAlex",
-        "text": text,
-        "flags": flags,
+    method = infer_method(text)
+    causal = "Yes" if any(x in text.lower() for x in ["causal", "intervention", "activation patch", "steering", "ablation", "model editing"]) else ""
+    mechanism = "Yes / causal-mechanistic signal" if any(x in text.lower() for x in ["causal tracing", "activation patch", "ablation", "intervention", "circuit", "mechanistic interpretability"]) else ("Probe / representation evidence" if any(x in text.lower() for x in ["probe", "probing", "representation"]) else "")
+    return {
+        "id": (w.get("id") or "").rsplit("/", 1)[-1], "year": int(w.get("publication_year") or (pub[:4] if pub else 0) or 0),
+        "published": pub, "primary_area": area, "related_areas": related, "title": title, "authors": authors,
+        "watched_authors": watched, "institutions": insts, "priority_institutions": priority_insts,
+        "venue": venue, "venue_tier": tier, "paper_type": paper_type(text), "task": task_for(area, text),
+        "method": method, "model": infer_models(text), "dataset": infer_datasets(text), "metric": infer_metrics(text),
+        "failure": infer_failure(text), "counterfactual": "Yes" if "counterfactual" in text.lower() else "",
+        "mechanism": mechanism, "causal": causal, "main_claim": first_sent(abstract) or first_sent(title),
+        "limitation": gap_signal(area, text) if not adjacent else "", "score": score, "citations": citations,
+        "doi": doi, "url": url, "code_data": "", "source": "OpenAlex", "text": text, "flags": flags,
+        "watch_researcher": forced_watch or (watched[0] if watched else ""),
     }
-    return item
 
-def arxiv_recent() -> list[dict[str, Any]]:
-    ns = {"a": "http://www.w3.org/2005/Atom"}
-    queries = {
-        "Multimodal Code Generation": 'all:"multimodal code generation" OR all:"screenshot to code" OR all:"flowchart to code" OR all:"UI to code"',
-        "Agentic Software Engineering": 'all:"coding agent" OR all:"software engineering agent" OR all:"SWE-bench"',
-        "Mechanistic Interpretability": 'all:"mechanistic interpretability" OR all:"sparse autoencoder" OR all:"activation patching"',
-        "Explainable AI": 'all:"explainable AI" OR all:"counterfactual explanation" OR all:"concept based explanation"',
-    }
-    items = []
-    for area, q in queries.items():
-        params = {
-            "search_query": q,
-            "start": 0,
-            "max_results": 80,
-            "sortBy": "submittedDate",
-            "sortOrder": "descending",
-        }
-        url = "https://export.arxiv.org/api/query?" + urllib.parse.urlencode(params)
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "govind-research-radar/2.0"})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                xml = r.read()
-            root = ET.fromstring(xml)
-        except Exception as e:
-            print("arXiv query failed:", area, e)
-            continue
-        for entry in root.findall("a:entry", ns):
-            title = norm_text(entry.findtext("a:title", default="", namespaces=ns))
-            abstract = norm_text(entry.findtext("a:summary", default="", namespaces=ns))
-            published = entry.findtext("a:published", default="", namespaces=ns)[:10]
-            try:
-                pd = datetime.fromisoformat(published).date()
-            except Exception:
-                continue
-            if pd < RECENT_CUTOFF:
-                continue
-            authors = [norm_text(x.findtext("a:name", default="", namespaces=ns)) for x in entry.findall("a:author", ns)]
-            url_id = entry.findtext("a:id", default="", namespaces=ns)
-            fake = {
-                "id": url_id,
-                "title": title,
-                "abstract_inverted_index": None,
-                "authorships": [{"author": {"display_name": a}, "institutions": []} for a in authors],
-                "primary_location": {"source": {"display_name": "arXiv"}, "landing_page_url": url_id},
-                "publication_date": published,
-                "publication_year": int(published[:4]),
-                "cited_by_count": 0,
-                "doi": "",
-            }
-            item = work_to_item(fake, source_override="arXiv direct")
-            if item:
-                item["text"] = norm_text(f"{title}. {abstract}")
-                primary, related, scores = classify_areas(item["text"])
-                if primary and area_gate(primary, item["text"]):
-                    item["primary_area"] = primary
-                    item["related_areas"] = related
-                    item["task"] = infer_task(primary, item["text"])
-                    item["method"] = infer_methods(item["text"])
-                    item["model"] = infer_models(item["text"])
-                    item["dataset"] = infer_datasets(item["text"])
-                    item["metric"] = infer_metrics(item["text"])
-                    item["failure"] = infer_failure(item["text"])
-                    item["counterfactual"] = yes_signal(item["text"], ["counterfactual"])
-                    item["causal"] = yes_signal(item["text"], ["causal", "intervention", "activation patch", "steering", "ablation"])
-                    item["main_claim"] = first_sentence(abstract)
-                    item["limitation"] = infer_limitation(primary, item["text"])
-                    item["why"] = why_matters(primary, item["flags"], item["limitation"])
-                    item["score"] = max(item["score"], 60)
-                    items.append(item)
-        time.sleep(1.0)
-    return items
 
-def merge_item(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
-    # Prefer richer metadata; preserve the strongest score/citation count.
-    best = old
-    old_rich = int(bool(old.get("doi"))) + int(old.get("venue") not in ("", "Unknown", "arXiv")) + len(old.get("institutions", []))
-    new_rich = int(bool(new.get("doi"))) + int(new.get("venue") not in ("", "Unknown", "arXiv")) + len(new.get("institutions", []))
-    if new_rich > old_rich:
-        best = new
-    merged = dict(best)
-    merged["score"] = max(int(old.get("score", 0)), int(new.get("score", 0)))
-    merged["citations"] = max(int(old.get("citations", 0)), int(new.get("citations", 0)))
-    merged["watched_authors"] = list(dict.fromkeys(old.get("watched_authors", []) + new.get("watched_authors", [])))
-    merged["priority_institutions"] = list(dict.fromkeys(old.get("priority_institutions", []) + new.get("priority_institutions", [])))
-    merged["related_areas"] = list(dict.fromkeys(old.get("related_areas", []) + new.get("related_areas", [])))
-    merged["flags"] = list(dict.fromkeys(old.get("flags", []) + new.get("flags", [])))
-    return merged
+def prefer(new: dict[str, Any], old: dict[str, Any]) -> dict[str, Any]:
+    # Prefer peer-reviewed venue over arXiv/unknown, then richer metadata, then citations.
+    def q(i):
+        reviewed = int(bool(i.get("venue_tier")) and i.get("venue") != "arXiv")
+        richness = sum(bool(i.get(k)) for k in ["method", "dataset", "metric", "mechanism", "causal", "doi"])
+        return (reviewed, richness, int(i.get("citations") or 0))
+    best = new if q(new) >= q(old) else old
+    other = old if best is new else new
+    for field in ["authors", "watched_authors", "institutions", "priority_institutions", "related_areas"]:
+        vals = []
+        for x in (best.get(field) or []) + (other.get(field) or []):
+            if x not in vals: vals.append(x)
+        best[field] = vals
+    best["citations"] = max(int(new.get("citations") or 0), int(old.get("citations") or 0))
+    return best
 
-def dedupe(items: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    by_key: dict[str, dict[str, Any]] = {}
-    doi_to_key: dict[str, str] = {}
-    title_to_key: dict[str, str] = {}
-    for item in items:
-        if not item or not item.get("title"):
-            continue
-        doi = norm_key(item.get("doi", ""))
-        title_key = f"{norm_key(item['title'])}:{item.get('year') or ''}"
 
-        existing_key = ""
-        if doi and doi in doi_to_key:
-            existing_key = doi_to_key[doi]
-        elif title_key in title_to_key:
-            existing_key = title_to_key[title_key]
+def merge_papers(existing: dict[str, dict[str, Any]], incoming: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    # Rebuild title/DOI indices every run so preprint/published versions collapse.
+    by_title: dict[str, str] = {}
+    by_doi: dict[str, str] = {}
+    for k, i in existing.items():
+        by_title[keytext(i.get("title", ""))] = k
+        if i.get("doi"): by_doi[i["doi"]] = k
+    for item in incoming:
+        tk, doi = keytext(item["title"]), item.get("doi", "")
+        k = by_doi.get(doi) if doi else None
+        k = k or by_title.get(tk)
+        if k and k in existing:
+            existing[k] = prefer(item, existing[k])
+        else:
+            k = "doi:" + doi if doi else "title:" + tk
+            if k in existing: k += ":" + item.get("id", "")
+            existing[k] = item
+            by_title[tk] = k
+            if doi: by_doi[doi] = k
+    return existing
 
-        if existing_key:
-            by_key[existing_key] = merge_item(by_key[existing_key], item)
-            if doi:
-                doi_to_key[doi] = existing_key
-            title_to_key[title_key] = existing_key
-            continue
 
-        canonical = f"doi:{doi}" if doi else f"title:{title_key}"
-        # Extremely rare canonical-key collision: make it unique without losing the title map.
-        if canonical in by_key:
-            canonical = canonical + ":" + str(len(by_key))
-        by_key[canonical] = item
-        if doi:
-            doi_to_key[doi] = canonical
-        title_to_key[title_key] = canonical
-    return list(by_key.values())
-
-def collect_topic_corpus() -> list[dict[str, Any]]:
-    raw = []
-    for area, cfg in AREA_CONFIG.items():
-        print("Collecting:", area)
-        for q in cfg["queries"]:
-            try:
-                for w in openalex_search(q, recent=False, pages=2):
-                    item = work_to_item(w)
-                    if item and item.get("primary_area") and area_gate(item["primary_area"], item["text"]):
-                        raw.append(item)
-                for w in openalex_search(q, recent=True, pages=1):
-                    item = work_to_item(w)
-                    if item and item.get("primary_area") and area_gate(item["primary_area"], item["text"]):
-                        raw.append(item)
-            except Exception as e:
-                print("query failed:", q, e)
+def load_state() -> dict[str, Any]:
+    if not STATE_FILE.exists():
+        return {"version": 3, "papers": {}, "authors": {}, "last_run": ""}
     try:
-        raw.extend(arxiv_recent())
-    except Exception as e:
-        print("arXiv sweep failed:", e)
-    return dedupe(raw)
+        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {"version": 3, "papers": {}, "authors": {}, "last_run": ""}
 
-def collect_author_corpus() -> tuple[list[dict[str, Any]], dict[str, dict[str, str]]]:
-    out = []
-    resolved: dict[str, dict[str, str]] = {}
-    for name, (aff, category) in WATCH_RESEARCHERS.items():
-        try:
-            author = openalex_resolve_author(name, aff)
-        except Exception as e:
-            print("author resolve failed:", name, e)
-            continue
-        if not author:
-            continue
-        aid = author.get("id", "")
-        resolved[name] = {
-            "id": aid,
-            "display_name": author.get("display_name", name),
-            "affiliation": aff,
-            "category": category,
-        }
-        try:
-            works = openalex_author_works(aid, pages=2)
-        except Exception as e:
-            print("author works failed:", name, e)
-            continue
-        for w in works:
-            item = work_to_item(w)
-            if not item:
-                continue
-            if not item.get("primary_area"):
-                item["primary_area"] = "Adjacent / Watch"
-                item["why"] = why_matters("Adjacent / Watch", ["watched researcher"], "")
-            if name not in item["watched_authors"]:
-                item["watched_authors"].append(name)
-            item["score"] = min(100, max(item["score"], 65) + 8)
-            item["watch_researcher"] = name
-            item["watch_affiliation"] = aff
-            item["watch_category"] = category
-            out.append(item)
-    return dedupe(out), resolved
 
-def display_join(values: Iterable[str]) -> str:
-    return "; ".join([norm_text(v) for v in values if norm_text(v)])
+def save_state(state: dict[str, Any]):
+    STATE_FILE.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
 
-def automated_gap(item: dict[str, Any]) -> str:
-    return item.get("limitation", "")
+
+def collect_topics(full: bool) -> list[dict[str, Any]]:
+    date_from = BACKFILL_FROM if full else RECENT_FROM
+    pages = 2 if full else 1
+    jobs = [(area, q) for area, cfg in AREAS.items() for q in cfg["queries"]]
+    raw: list[dict[str, Any]] = []
+    def worker(job):
+        area, q = job
+        return area, q, search_works(q, date_from, pages)
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futs = [ex.submit(worker, j) for j in jobs]
+        for fut in as_completed(futs):
+            try:
+                area, q, works = fut.result()
+                kept = 0
+                for w in works:
+                    item = build_item(w)
+                    if item and item["primary_area"] in AREAS:
+                        raw.append(item); kept += 1
+                print(f"topic {area} | {q}: {kept}/{len(works)} kept")
+            except Exception as e:
+                print("topic query failed:", e)
+    return raw
+
+
+def collect_authors(state: dict[str, Any], full: bool) -> list[dict[str, Any]]:
+    authors_state = state.setdefault("authors", {})
+    # Resolve only missing identities; persist IDs in cache.
+    missing = [(n, aff) for n, (aff, _) in WATCH_RESEARCHERS.items() if not (authors_state.get(n) or {}).get("id")]
+    if missing:
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            fmap = {ex.submit(resolve_author, n, aff): (n, aff) for n, aff in missing}
+            for fut in as_completed(fmap):
+                n, aff = fmap[fut]
+                try:
+                    a = fut.result()
+                    if a:
+                        authors_state[n] = {"id": a.get("id", ""), "display_name": a.get("display_name", n), "affiliation": aff, "category": WATCH_RESEARCHERS[n][1]}
+                        print("resolved author:", n, a.get("id", ""))
+                except Exception as e:
+                    print("author resolve failed:", n, e)
+    date_from = BACKFILL_FROM if full else RECENT_FROM
+    jobs = [(n, m) for n, m in authors_state.items() if m.get("id")]
+    raw: list[dict[str, Any]] = []
+    def worker(job):
+        n, m = job
+        return n, author_works(m["id"], date_from, 1)
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        fmap = {ex.submit(worker, j): j[0] for j in jobs}
+        for fut in as_completed(fmap):
+            n = fmap[fut]
+            try:
+                _, works = fut.result()
+                kept = 0
+                for w in works:
+                    item = build_item(w, forced_watch=n)
+                    if item:
+                        raw.append(item); kept += 1
+                print(f"author {n}: {kept}/{len(works)} kept")
+            except Exception as e:
+                print("author works failed:", n, e)
+    return raw
+
+
+def join(xs) -> str:
+    return "; ".join(norm(x) for x in xs if norm(x))
+
+
+def priority_label(score: int) -> str:
+    return "A — Must Read" if score >= 85 else ("B — High" if score >= 72 else "C — Monitor")
+
 
 def input_modality(text: str) -> str:
-    low = text.lower()
-    labels = []
-    for key, label in [
-        ("flowchart", "Flowchart"),
-        ("screenshot", "Screenshot"),
-        ("diagram", "Diagram"),
-        ("ui ", "UI / Design"),
-        ("gui", "GUI"),
-        ("image", "Image"),
-        ("vision", "Vision"),
-        ("multimodal", "Multimodal"),
-    ]:
-        if key in low:
-            labels.append(label)
-    return "; ".join(dict.fromkeys(labels)) or "Visual / multimodal input"
+    low = text.lower(); out = []
+    for k, v in [("flowchart", "Flowchart"), ("screenshot", "Screenshot"), ("diagram", "Diagram"), ("ui", "UI / Design"), ("gui", "GUI"), ("image", "Image"), ("vision", "Vision"), ("multimodal", "Multimodal")]:
+        if k in low and v not in out: out.append(v)
+    return "; ".join(out)
 
-def structural_grounding(text: str) -> str:
-    return "Explicit signal" if any(x in text.lower() for x in ["grounding", "structure", "topology", "edge", "relation", "layout", "control flow"]) else "Not explicit"
 
-def internal_state(text: str) -> str:
-    return "Yes / internal representation signal" if any(x in text.lower() for x in ["activation", "hidden state", "attention", "representation", "probe", "circuit"]) else ""
+def master_row(i):
+    return [i["id"], i["year"], i["published"], i["primary_area"], join(i["related_areas"]), i["title"], join(i["authors"]), join(i["watched_authors"]), join(i["institutions"]), join(i["priority_institutions"]), i["venue"], i["venue_tier"], i["paper_type"], i["task"], i["method"], i["model"], i["dataset"], i["metric"], i["failure"], i["counterfactual"], i["mechanism"], i["causal"], i["main_claim"], i["limitation"], why(i), i["score"], i["citations"], i["doi"], i["url"], i["code_data"], NOW_ISO, i["source"]]
 
-def behavioral_link(text: str) -> str:
-    return "Yes / behavioral link signal" if any(x in text.lower() for x in ["behavior", "performance", "steering", "task", "prediction", "generation"]) else ""
 
-def xai_method_family(text: str) -> str:
-    low = text.lower()
-    if "counterfactual" in low:
-        return "Counterfactual"
-    if any(x in low for x in ["tcav", "concept-based", "concept based"]):
-        return "Concept-based"
-    if any(x in low for x in ["shap", "lime", "feature attribution"]):
-        return "Attribution"
-    if any(x in low for x in ["saliency", "gradient"]):
-        return "Gradient / saliency"
-    if any(x in low for x in ["intrinsic", "interpretable model", "rule list", "prototype"]):
-        return "Intrinsic interpretable model"
-    return "Post-hoc / analysis"
+def why(i):
+    base = {
+        "Multimodal Code Generation": "Directly relevant to visual grounding and multimodal code generation.",
+        "Agentic Software Engineering": "Directly relevant to coding-agent capability, reliability, failure analysis, or intervention.",
+        "Mechanistic Interpretability": "Relevant to representation → causal use → intervention analysis.",
+        "Explainable AI": "Relevant to explanation faithfulness, robustness, concepts, or human-facing interpretability.",
+        "Adjacent / Watch": "Watched-author adjacent work; inspect for transfer to tracked research directions.",
+    }.get(i["primary_area"], "Relevant to tracked research.")
+    if i["limitation"]: base += " Gap: " + i["limitation"]
+    return base
 
-def intrinsic_posthoc(text: str) -> str:
-    return "Intrinsic" if any(x in text.lower() for x in ["intrinsic", "inherently interpretable", "interpretable model", "rule list"]) else "Post-hoc / analysis"
 
-def local_global(text: str) -> str:
-    low = text.lower()
-    if "global explanation" in low:
-        return "Global"
-    if "local explanation" in low or "instance-level" in low:
-        return "Local"
-    return ""
+def new_row(i):
+    return [i["published"], i["year"], i["primary_area"], i["title"], join(i["authors"]), join(i["priority_institutions"]), i["venue"], i["venue_tier"], i["score"], ", ".join(i["flags"]) or why(i), i["method"] or i["paper_type"], i["limitation"], i["citations"], i["url"], i["code_data"]]
 
-def bool_signal(text: str, keys: list[str]) -> str:
-    return "Yes" if any(k in text.lower() for k in keys) else ""
 
-def master_row(i: dict[str, Any]) -> list[Any]:
-    return [
-        i["id"], i["year"], i["published"], i["primary_area"], display_join(i["related_areas"]),
-        i["title"], display_join(i["authors"]), display_join(i["watched_authors"]),
-        display_join(i["institutions"]), display_join(i["priority_institutions"]),
-        i["venue"], i["venue_tier"], i["paper_type"], i["task"], i["method"], i["model"],
-        i["dataset"], i["metric"], i["failure"], i["counterfactual"], i["mechanism"], i["causal"],
-        i["main_claim"], i["limitation"], i["why"], i["score"], i["citations"], i["doi"],
-        i["url"], i["code_data"], NOW_ISO, i["source"],
-    ]
+def mm_row(i):
+    t=i["text"]; grounding="Explicit signal" if any(x in t.lower() for x in ["grounding","structure","topology","control flow","edge","layout"]) else "Not explicit"
+    return [i["year"], i["title"], join(i["authors"]), join(i["institutions"]), i["venue"], input_modality(t), i["task"], i["model"], i["dataset"], i["metric"], grounding, i["counterfactual"], i["causal"], i["failure"], i["main_claim"], i["limitation"], why(i), priority_label(i["score"]), i["citations"], i["url"], i["code_data"]]
 
-def new_row(i: dict[str, Any]) -> list[Any]:
-    why = ", ".join(i["flags"]) if i["flags"] else i["why"]
-    return [
-        i["published"], i["year"], i["primary_area"], i["title"], display_join(i["authors"]),
-        display_join(i["priority_institutions"]), i["venue"], i["venue_tier"], i["score"],
-        why, i["method"] or i["paper_type"], i["limitation"], i["citations"], i["url"], i["code_data"],
-    ]
 
-def multimodal_row(i: dict[str, Any]) -> list[Any]:
-    t = i["text"]
-    return [
-        i["year"], i["title"], display_join(i["authors"]), display_join(i["institutions"]), i["venue"],
-        input_modality(t), i["task"], i["model"], i["dataset"], i["metric"], structural_grounding(t),
-        i["counterfactual"], i["causal"], i["failure"], i["main_claim"], i["limitation"], i["why"],
-        priority_label(i["score"]), i["citations"], i["url"], i["code_data"],
-    ]
+def ag_row(i):
+    t=i["text"].lower(); cap=[]
+    for k,v in [("planning","Planning"),("tool","Tool use"),("repository","Repository navigation"),("debug","Debugging"),("repair","Program repair"),("test","Testing"),("multi-agent","Multi-agent collaboration"),("memory","Memory")]:
+        if k in t and v not in cap: cap.append(v)
+    env=[]
+    for k,v in [("repository","Repository"),("github","GitHub"),("terminal","Terminal"),("ide","IDE"),("browser","Browser")]:
+        if k in t: env.append(v)
+    fb=[]
+    for k,v in [("unit test","Unit tests"),("execution","Execution feedback"),("compiler","Compiler feedback"),("human feedback","Human feedback")]:
+        if k in t: fb.append(v)
+    internal="Yes / internal representation signal" if any(x in t for x in ["activation","hidden state","attention","representation","probe","circuit"]) else ""
+    return [i["year"],i["title"],join(i["authors"]),join(i["institutions"]),i["venue"],"; ".join(cap) or "Coding / software agent",i["task"],"; ".join(env),"; ".join(fb),i["failure"],"",internal,i["counterfactual"],i["mechanism"],i["causal"],i["metric"],i["dataset"],i["main_claim"],i["limitation"],why(i),priority_label(i["score"]),i["citations"],i["url"],i["code_data"]]
 
-def agentic_row(i: dict[str, Any]) -> list[Any]:
-    t = i["text"]
-    return [
-        i["year"], i["title"], display_join(i["authors"]), display_join(i["institutions"]), i["venue"],
-        infer_agent_capability(t), i["task"], infer_environment(t), infer_feedback(t), i["failure"],
-        "", internal_state(t), i["counterfactual"], i["mechanism"], i["causal"], i["metric"],
-        i["dataset"], i["main_claim"], i["limitation"], i["why"], priority_label(i["score"]),
-        i["citations"], i["url"], i["code_data"],
-    ]
 
-def mech_row(i: dict[str, Any]) -> list[Any]:
-    t = i["text"]
-    return [
-        i["year"], i["title"], display_join(i["authors"]), display_join(i["institutions"]), i["venue"],
-        infer_modality(t), infer_target_component(t), i["method"], infer_target_component(t),
-        bool_signal(t, ["probe", "probing", "linear classifier"]), bool_signal(t, ["causal", "activation patch", "ablation"]),
-        bool_signal(t, ["steering", "intervention", "model editing", "activation patch"]), i["counterfactual"],
-        i["mechanism"], behavioral_link(t), i["main_claim"], i["limitation"], i["why"],
-        priority_label(i["score"]), i["citations"], i["url"], i["code_data"],
-    ]
+def mi_row(i):
+    t=i["text"].lower(); targets=[]
+    for k,v in [("attention head","Attention heads"),("mlp","MLP"),("residual stream","Residual stream"),("neuron","Neurons"),("sparse autoencoder","SAE features"),("feature","Features"),("activation","Activations"),("circuit","Circuits"),("layer","Layers")]:
+        if k in t and v not in targets: targets.append(v)
+    modality=[]
+    if any(x in t for x in ["vision","image","multimodal","vlm"]): modality.append("Vision / Multimodal")
+    if any(x in t for x in ["language model","llm","transformer","text"]): modality.append("Language / LLM")
+    if any(x in t for x in ["code","program","software"]): modality.append("Code")
+    probe="Yes" if any(x in t for x in ["probe","probing","linear classifier"]) else ""
+    causal="Yes" if any(x in t for x in ["causal","activation patch","ablation"]) else ""
+    interv="Yes" if any(x in t for x in ["steering","intervention","model editing","activation patch"]) else ""
+    behavior="Yes / behavioral link signal" if any(x in t for x in ["behavior","performance","steering","task","prediction","generation"]) else ""
+    return [i["year"],i["title"],join(i["authors"]),join(i["institutions"]),i["venue"],"; ".join(modality) or "ML model","; ".join(targets),i["method"],"; ".join(targets),probe,causal,interv,i["counterfactual"],i["mechanism"],behavior,i["main_claim"],i["limitation"],why(i),priority_label(i["score"]),i["citations"],i["url"],i["code_data"]]
 
-def xai_row(i: dict[str, Any]) -> list[Any]:
-    t = i["text"]
-    return [
-        i["year"], i["title"], display_join(i["authors"]), display_join(i["institutions"]), i["venue"],
-        infer_modality(t), i["task"], infer_explanation_type(t), xai_method_family(t), intrinsic_posthoc(t),
-        local_global(t), bool_signal(t, ["faithful", "faithfulness"]), bool_signal(t, ["human evaluation", "user study"]),
-        bool_signal(t, ["robust", "stability", "stable explanation"]), i["counterfactual"], i["causal"],
-        i["main_claim"], i["limitation"], i["why"], priority_label(i["score"]), i["citations"], i["url"], i["code_data"],
-    ]
 
-def author_row(i: dict[str, Any], resolved: dict[str, dict[str, str]]) -> list[Any]:
-    researcher = i.get("watch_researcher") or (i["watched_authors"][0] if i["watched_authors"] else "")
-    meta = resolved.get(researcher, {})
-    coauthors = [a for a in i["authors"] if norm_key(a) != norm_key(researcher)]
-    return [
-        researcher, meta.get("affiliation", i.get("watch_affiliation", "")), meta.get("category", i.get("watch_category", "")),
-        i["year"], i["title"], display_join(coauthors), i["venue"], i["venue_tier"], i["primary_area"], i["paper_type"],
-        i["task"], i["method"], i["model"], i["dataset"], i["counterfactual"], i["mechanism"], i["causal"],
-        i["main_claim"], i["limitation"], i["why"], i["citations"], i["url"],
-    ]
+def xai_row(i):
+    t=i["text"].lower()
+    etype="Counterfactual" if "counterfactual" in t else ("Concept-based" if any(x in t for x in ["tcav","concept-based","concept based"]) else ("Feature attribution" if any(x in t for x in ["shap","lime","feature attribution"]) else ("Saliency / gradient" if any(x in t for x in ["saliency","gradient"]) else "Model explanation / interpretability")))
+    family="Counterfactual" if "counterfactual" in t else ("Concept-based" if "concept" in t else ("Attribution" if any(x in t for x in ["shap","lime","feature attribution"]) else "Post-hoc / analysis"))
+    intrinsic="Intrinsic" if any(x in t for x in ["inherently interpretable","interpretable model","rule list"]) else "Post-hoc / analysis"
+    modality="Vision / Multimodal" if any(x in t for x in ["vision","image","multimodal","vlm"]) else ("Language / LLM" if any(x in t for x in ["language model","llm","transformer"]) else "ML model")
+    return [i["year"],i["title"],join(i["authors"]),join(i["institutions"]),i["venue"],modality,i["task"],etype,family,intrinsic,"", "Yes" if "faithful" in t else "", "Yes" if any(x in t for x in ["human evaluation","user study"]) else "", "Yes" if any(x in t for x in ["robust","stability"]) else "", i["counterfactual"],i["causal"],i["main_claim"],i["limitation"],why(i),priority_label(i["score"]),i["citations"],i["url"],i["code_data"]]
 
-def write_rows(filename: str, rows: list[list[Any]]) -> None:
-    path = OUT / filename
-    with path.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerows(rows)
-    print(f"wrote {filename}: {len(rows)} rows")
+
+def author_row(i, state):
+    r=i.get("watch_researcher") or (i["watched_authors"][0] if i["watched_authors"] else "")
+    meta=(state.get("authors") or {}).get(r, {})
+    co=[a for a in i["authors"] if keytext(a)!=keytext(r)]
+    return [r,meta.get("affiliation",WATCH_RESEARCHERS.get(r,("",""))[0]),meta.get("category",WATCH_RESEARCHERS.get(r,("",""))[1]),i["year"],i["title"],join(co),i["venue"],i["venue_tier"],i["primary_area"],i["paper_type"],i["task"],i["method"],i["model"],i["dataset"],i["counterfactual"],i["mechanism"],i["causal"],i["main_claim"],i["limitation"],why(i),i["citations"],i["url"]]
+
+
+def write_csv(name: str, rows):
+    with (OUT / name).open("w", encoding="utf-8-sig", newline="") as f:
+        csv.writer(f).writerows(rows)
+    print("wrote", name, len(rows))
+
+
+def balanced_recent(items: list[dict[str, Any]], limit: int = 15) -> list[dict[str, Any]]:
+    recent = [i for i in items if i["primary_area"] in AREAS and i.get("published") and i["published"] >= RECENT_FROM and i["score"] >= 72]
+    recent.sort(key=lambda i: (-i["score"], -(i["citations"] or 0), i["published"]), reverse=False)
+    selected=[]; used=set()
+    for area in AREAS:
+        for i in [x for x in recent if x["primary_area"]==area][:3]:
+            k=keytext(i["title"])
+            if k not in used: selected.append(i); used.add(k)
+    for i in recent:
+        if len(selected)>=limit: break
+        k=keytext(i["title"])
+        if k not in used: selected.append(i); used.add(k)
+    return selected[:limit]
+
 
 def main():
-    topic = collect_topic_corpus()
-    author_items, resolved = collect_author_corpus()
-    all_items = dedupe(topic + author_items)
+    state=load_state()
+    full = MODE == "full" or not state.get("papers") or state.get("version") != 3
+    print("Research Radar mode:", "FULL BACKFILL" if full else "INCREMENTAL")
+    if full:
+        state={"version":3,"papers":{},"authors":{},"last_run":""}
+    incoming=collect_topics(full)
+    incoming.extend(collect_authors(state, full))
+    state["papers"]=merge_papers(state.get("papers",{}), incoming)
+    state["last_run"]=NOW_ISO
+    state["version"]=3
+    save_state(state)
 
-    # Keep domain corpus strict; watched-author adjacent papers only appear in Author Papers / Master.
-    domain_items = [i for i in all_items if i["primary_area"] in AREA_CONFIG and area_gate(i["primary_area"], i["text"])]
+    all_items=list(state["papers"].values())
+    domain=[i for i in all_items if i.get("primary_area") in AREAS]
+    # Quality purge on every run: old cached items must still satisfy v3 gates.
+    clean=[]
+    for i in domain:
+        a, rel, _=classify(i.get("text",i.get("title","")))
+        if a:
+            i["primary_area"]=a; i["related_areas"]=rel; clean.append(i)
+    domain=clean
+    domain.sort(key=lambda i:(i.get("published") or "9999-99-99", i["title"].lower()))
+    recent=balanced_recent(domain)
+    author_items=[i for i in all_items if i.get("watch_researcher") or i.get("watched_authors")]
+    author_items.sort(key=lambda i:(keytext(i.get("watch_researcher","")),i.get("published") or "",i["title"].lower()))
 
-    # Historical views use oldest→newest so new weekly papers mostly append at the bottom.
-    domain_items.sort(key=lambda x: (x["published"] or "9999-99-99", x["title"].lower()))
-    all_items.sort(key=lambda x: (x["published"] or "9999-99-99", x["title"].lower()))
+    write_csv("all_papers_master.csv", [master_row(i) for i in domain])
+    write_csv("new_high_priority.csv", [new_row(i) for i in recent])
+    write_csv("multimodal_code_gen.csv", [mm_row(i) for i in domain if i["primary_area"]=="Multimodal Code Generation"])
+    write_csv("agentic_se.csv", [ag_row(i) for i in domain if i["primary_area"]=="Agentic Software Engineering"])
+    write_csv("mechanistic_interpretability.csv", [mi_row(i) for i in domain if i["primary_area"]=="Mechanistic Interpretability"])
+    write_csv("explainable_ai.csv", [xai_row(i) for i in domain if i["primary_area"]=="Explainable AI"])
+    write_csv("author_papers.csv", [author_row(i,state) for i in author_items])
 
-    recent = [
-        i for i in domain_items
-        if i.get("published") and i["published"][:10] >= RECENT_CUTOFF.isoformat() and i["score"] >= 62
-    ]
-    recent.sort(key=lambda x: (-x["score"], x["published"], x["title"]), reverse=False)
-    recent = recent[:15]
-
-    write_rows("all_papers_master.csv", [master_row(i) for i in all_items])
-    write_rows("new_high_priority.csv", [new_row(i) for i in recent])
-    write_rows("multimodal_code_gen.csv", [multimodal_row(i) for i in domain_items if i["primary_area"] == "Multimodal Code Generation"])
-    write_rows("agentic_se.csv", [agentic_row(i) for i in domain_items if i["primary_area"] == "Agentic Software Engineering"])
-    write_rows("mechanistic_interpretability.csv", [mech_row(i) for i in domain_items if i["primary_area"] == "Mechanistic Interpretability"])
-    write_rows("explainable_ai.csv", [xai_row(i) for i in domain_items if i["primary_area"] == "Explainable AI"])
-
-    # Author view grouped by researcher and chronological.
-    author_items.sort(key=lambda x: (norm_key(x.get("watch_researcher", "")), x["published"] or "", x["title"].lower()))
-    write_rows("author_papers.csv", [author_row(i, resolved) for i in author_items])
-
-    # Website JSON: only top recent papers, compact.
-    counts = {a: sum(1 for x in recent if x["primary_area"] == a) for a in AREA_CONFIG}
-    payload = {
-        "generated_at": NOW_ISO,
-        "window_days": RECENT_DAYS,
-        "items": [
-            {
-                "date": i["published"],
-                "area": i["primary_area"],
-                "title": i["title"],
-                "authors": i["authors"][:6],
-                "institutions": i["institutions"][:5],
-                "venue": i["venue"],
-                "score": i["score"],
-                "citations": i["citations"],
-                "why": ", ".join(i["flags"]) if i["flags"] else i["why"],
-                "url": i["url"],
-            }
-            for i in recent
-        ],
-        "counts": counts,
-        "watch": {
-            "researchers": len(WATCH_RESEARCHERS),
-            "institutions": WATCH_INSTITUTIONS,
-            "venues": sorted(WATCH_VENUES),
-        },
-        "corpus": {
-            "all_papers": len(all_items),
-            "domain_papers": len(domain_items),
-            "author_papers": len(author_items),
-        },
+    counts={a:sum(1 for i in recent if i["primary_area"]==a) for a in AREAS}
+    payload={
+        "generated_at":NOW_ISO,"window_days":RECENT_DAYS,
+        "items":[{"date":i["published"],"area":i["primary_area"],"title":i["title"],"authors":i["authors"][:6],"institutions":i["institutions"][:5],"venue":i["venue"],"score":i["score"],"citations":i["citations"],"why":", ".join(i["flags"]) or why(i),"url":i["url"]} for i in recent],
+        "counts":counts,"watch":{"researchers":len(WATCH_RESEARCHERS),"institutions":WATCH_INSTITUTIONS,"venues":sorted(WATCH_VENUES)},
+        "corpus":{"domain_papers":len(domain),"author_watch_papers":len(author_items),"mode":"full" if full else "incremental"},
     }
-    (PUBLIC / "research-radar.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    (OUT / "run_status.json").write_text(json.dumps({
-        "generated_at": NOW_ISO,
-        "all_papers": len(all_items),
-        "domain_papers": len(domain_items),
-        "author_papers": len(author_items),
-        "recent_high_priority": len(recent),
-        "resolved_researchers": len(resolved),
-    }, indent=2), encoding="utf-8")
-    print("Research radar build complete:", payload["corpus"], "recent", len(recent))
+    (PUBLIC/"research-radar.json").write_text(json.dumps(payload,ensure_ascii=False,indent=2),encoding="utf-8")
+    (OUT/"run_status.json").write_text(json.dumps({"generated_at":NOW_ISO,"mode":"full" if full else "incremental","domain_papers":len(domain),"recent":len(recent),"authors_resolved":len(state.get("authors",{}))},indent=2),encoding="utf-8")
+    print(json.dumps(payload["corpus"],indent=2))
 
 if __name__ == "__main__":
     main()
