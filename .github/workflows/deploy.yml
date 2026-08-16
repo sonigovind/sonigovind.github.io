@@ -19,6 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,161 +33,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build weekly research radar data
-        run: |
-          mkdir -p public
-          python3 - <<'PY'
-          import json, re, urllib.parse, urllib.request
-          from datetime import datetime, timedelta, timezone
+      - name: Build research literature database
+        env:
+          OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+        run: python3 scripts/build_research_radar.py
 
-          AREAS = {
-            'Multimodal Code Generation': [
-              'multimodal code generation','vision language code','image to code','screenshot to code',
-              'ui to code','diagram to code','flowchart code','multimodal software engineering'
-            ],
-            'Agentic Software Engineering': [
-              'coding agent','software engineering agent','autonomous software engineer',
-              'agentic software engineering','program repair agent','repository level agent'
-            ],
-            'Mechanistic Interpretability': [
-              'mechanistic interpretability','activation patching','causal tracing',
-              'sparse autoencoder','transformer circuits','feature steering'
-            ],
-            'Explainable AI': [
-              'explainable ai','interpretable machine learning','explanation faithfulness',
-              'counterfactual explanation','concept based explanation','model explanation'
-            ],
-          }
-
-          WATCH_VENUES = {
-            'NeurIPS','ICML','ICLR','ACL','EMNLP','NAACL','EACL','TACL','CVPR','ICCV','ECCV','WACV',
-            'ICSE','FSE','ESEC/FSE','ASE','ISSTA','MSR','ICSME','SANER','JMLR','TMLR','AAAI',
-            'AISTATS','COLM','PLDI','OOPSLA','CHI','IJCAI','KDD'
-          }
-          WATCH_INSTITUTIONS = [
-            'Stanford','Carnegie Mellon','National University of Singapore','Nanyang Technological University'
-          ]
-          WATCH_RESEARCHERS = [
-            'Ahmed E. Hassan','Bram Adams','Jian Yang','Xingjun Ma','Yu-Gang Jiang','Chen Qian','Sirui Hong',
-            'Graham Neubig','Nicholas Carlini','Albert Gu','Abhik Roychoudhury','Bogdan Vasilescu','Tao Xie',
-            'Zhendong Su','Percy Liang','David Bau','Neel Nanda','Jacob Andreas','Been Kim','Cynthia Rudin',
-            'Finale Doshi-Velez','Wenya Wang','Clement Neo','Zhengxuan Wu','Kenji Kawaguchi','Yuntong Zhang','Shyam Agarwal'
-          ]
-
-          cutoff = (datetime.now(timezone.utc) - timedelta(days=10)).date().isoformat()
-          headers = {'User-Agent':'govind-research-radar/1.0'}
-
-          def fetch(q):
-            params = {
-              'search': q,
-              'filter': f'from_publication_date:{cutoff}',
-              'sort': 'publication_date:desc',
-              'per-page': '40'
-            }
-            req = urllib.request.Request(
-              'https://api.openalex.org/works?' + urllib.parse.urlencode(params),
-              headers=headers
-            )
-            with urllib.request.urlopen(req, timeout=40) as r:
-              return json.load(r).get('results', [])
-
-          def text_of(w):
-            inv = w.get('abstract_inverted_index') or {}
-            return (f"{w.get('title','')} {' '.join(inv.keys())}").lower()
-
-          def classify(text):
-            best, best_hits = None, 0
-            for area, terms in AREAS.items():
-              hits = sum(1 for t in terms if t in text)
-              if hits > best_hits:
-                best, best_hits = area, hits
-            return best, best_hits
-
-          seen = {}
-          for _, terms in AREAS.items():
-            for q in terms[:6]:
-              try:
-                works = fetch(q)
-              except Exception as e:
-                print('query failed', q, e)
-                continue
-              for w in works:
-                title = (w.get('title') or '').strip()
-                if not title:
-                  continue
-                text = text_of(w)
-                area, hits = classify(text)
-                if not area or hits == 0:
-                  continue
-
-                authorships = w.get('authorships') or []
-                authors = [((a.get('author') or {}).get('display_name') or '') for a in authorships]
-                institutions = []
-                for a in authorships:
-                  for inst in a.get('institutions') or []:
-                    n = inst.get('display_name') or ''
-                    if n and n not in institutions:
-                      institutions.append(n)
-
-                source = (((w.get('primary_location') or {}).get('source') or {}).get('display_name') or 'OpenAlex / preprint')
-                score = 50 + min(hits * 8, 24)
-                flags = []
-
-                if any(v.lower() in source.lower() for v in WATCH_VENUES):
-                  score += 12
-                  flags.append('priority venue')
-                if any(any(x.lower() in inst.lower() for x in WATCH_INSTITUTIONS) for inst in institutions):
-                  score += 10
-                  flags.append('priority institution')
-                watched = next((a for a in authors if any(r.lower() == a.lower() for r in WATCH_RESEARCHERS)), '')
-                if watched:
-                  score += 12
-                  flags.append(f'watched researcher: {watched}')
-                if any(k in text for k in ['counterfactual','causal','intervention','failure','benchmark','evaluation','faithful','mechanism']):
-                  score += 5
-                  flags.append('strong evidence/method signal')
-
-                score = min(score, 100)
-                if score < 60:
-                  continue
-
-                loc = w.get('primary_location') or {}
-                url = loc.get('landing_page_url') or w.get('doi') or w.get('id') or ''
-                key = re.sub(r'[^a-z0-9]+',' ',title.lower()).strip()
-                item = {
-                  'date': w.get('publication_date') or '',
-                  'area': area,
-                  'title': title,
-                  'authors': authors[:6],
-                  'institutions': institutions[:5],
-                  'venue': source,
-                  'score': score,
-                  'citations': int(w.get('cited_by_count') or 0),
-                  'why': ', '.join(flags) if flags else 'strong topic match',
-                  'url': url
-                }
-                if key not in seen or item['score'] > seen[key]['score']:
-                  seen[key] = item
-
-          items = sorted(seen.values(), key=lambda x: (-x['score'], x['date'], x['title']))[:40]
-          counts = {a: sum(1 for x in items if x['area'] == a) for a in AREAS}
-          payload = {
-            'generated_at': datetime.now(timezone.utc).isoformat(),
-            'window_days': 10,
-            'items': items,
-            'counts': counts,
-            'watch': {
-              'researchers': len(WATCH_RESEARCHERS),
-              'institutions': WATCH_INSTITUTIONS,
-              'venues': sorted(WATCH_VENUES)
-            }
-          }
-          with open('public/research-radar.json','w',encoding='utf-8') as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-          print(f"Research radar: {len(items)} items")
-          PY
-
-      - name: Build
+      - name: Build website
         run: npm run build
 
       - name: Upload artifact
@@ -200,6 +53,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
